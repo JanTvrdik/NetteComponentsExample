@@ -1,0 +1,34 @@
+<div class="comments">
+
+	{* Vypíše flash messages dané komponenty, viz http://doc.nette.org/cs/components#toc-flash-zpravy. *}
+	<div n:foreach="$flashes as $flash" class="flash {$flash->type}">{$flash->message}</div>
+
+	<ul>
+		{foreach $comments as $comment}
+		<li>
+			<span class="author">
+				{if $comment->author}
+					{$comment->author}
+				{else}
+					<em>anonymní</em>
+				{/if}
+			</span>
+
+			{*	Aby v komentáři fungovalo zalomení řádků a zároveň se to dobře escapovalo, musí se použít trochu
+				složitější konstrukce. Ten vykřičním na začátku říká "vypnout automatiku, přepínám na manuální řízení".
+				Následně ručně zavoláme helper escape a až po té helper nl2br.
+				Pokud bychom použili jenom {$comment->text|nl2br}, tak by se escapovaly i <br>. Jinými slovy zápis
+				{$comment->text|nl2br} je ekvivalentní zápisu {!$comment->text|nl2br|escape}. Tedy automatické
+				escapování se provádí vždy až po aplikaci helperů. *}
+			{!$comment->text|escape|nl2br}
+
+			{* Odkaz na smazání komentářů. Nezapomeňte na ten vykřičník! *}
+			<a n:href="delete!, $comment->id">smazat</a>
+		</li>
+		{/foreach}
+	</ul>
+
+	{* Vykreslení formuláře, ekvivalent $control->getComponent('addCommentForm')->render() *}
+	{control addCommentForm}
+
+</div>
