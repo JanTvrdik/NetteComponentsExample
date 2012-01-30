@@ -1,6 +1,7 @@
 <?php
 
 use Nette\Application\UI;
+use Nette\Diagnostics\Debugger;
 
 
 /**
@@ -19,6 +20,16 @@ final class DemoPresenter extends UI\Presenter
 		$control['c']->addComponent(new BoxControl, 'y');
 
 		return $control;
+	}
+
+	private function dump($var, $title = NULL)
+	{
+		if ($var instanceof Nette\ComponentModel\IComponent) {
+			Debugger::barDump(array($var->getName() => $var), $title);
+
+		} else {
+			Debugger::barDump($var, $title);
+		}
 	}
 
 }
