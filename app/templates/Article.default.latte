@@ -1,0 +1,8 @@
+{block #content}
+
+    <h1>{$article->title}</h1>
+
+    {* Vypsání escapovaného obsahu článku se zachováním odřádkování. *}
+    {!$article->content|escape|nl2br}
+
+{/block}
