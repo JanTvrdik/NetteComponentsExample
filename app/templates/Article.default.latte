@@ -2,7 +2,7 @@
 
     <h1>{$article->title}</h1>
 
-    {* Vypsání escapovaného obsahu článku se zachováním odřádkování. *}
+    {* Vypsání escapovaného obsahu článku se zachováním odřádkování. Viz CommentsControl.latte pro podrobné vysvětlení. *}
     {!$article->content|escape|nl2br}
 
     {* Vykreslení komponenty comments, ekvivalent $this['comments']->render() *}
