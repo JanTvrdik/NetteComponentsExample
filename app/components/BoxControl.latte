@@ -1,0 +1,17 @@
+<div class="box">
+
+	{* V šabloně komponenty, která dědí od UI\Control je vždy dostupná proměnná $control (viz UI\Control::createTemplate()). *}
+	{* $control->name je ekvivalent metody $control->getName(), která vrací název komponenty *}
+	<strong>{$control->name}</strong>
+
+	{* $control->components je ekvivalent metody $control->getComponents(), která (při volání bez parametrů) vrátí
+		iterátor, pomocí kterého lze projít všechny přímé potomky dané komponenty *}
+	{foreach $control->components as $component}
+
+		{* Protože $component je instance komponenty, tak ji makro {control} rovnou vykreslí, alternativně by šlo
+			použít {control $component->name} *}
+		{control $component}
+
+	{/foreach}
+
+</div>
