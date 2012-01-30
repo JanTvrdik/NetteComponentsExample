@@ -1,0 +1,84 @@
+body {
+	font: 16px/1.5 "Trebuchet MS", "Geneva CE", lucida, sans-serif;
+	color: #333;
+	background-color: #fff;
+}
+
+h1 {
+	font-size: 40px;
+	color: #000000;
+}
+
+.flash {
+	color: black;
+	background: #FFF9D7;
+	border: 1px solid #E2C822;
+	padding: 1em;
+	margin: 1em 0;
+}
+
+.nav {
+	font-size: 140%;
+	margin: 0;
+}
+
+.nav a {
+	text-decoration: none;
+	color: #006AEB;
+}
+
+.nav a:hover {
+	color: #FFF;
+	background-color: #006AEB;
+}
+
+.box {
+	border: 5px solid black;
+	padding: 20px;
+	font-size: 32px;
+	margin: 10px;
+	float: left;
+}
+
+.box strong {
+	display: block;
+	margin-bottom: 10px;
+}
+
+.comments {
+	padding: 10px;
+	width: 450px;
+}
+
+.comments ul {
+	background-color: #F0F0F0;
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+}
+
+.comments .author {
+	font-weight: bold;
+}
+
+.comments li {
+	border: 1px solid white;
+	padding: 3px;
+}
+
+.comments form th {
+	text-align: left;
+	vertical-align: top;
+	width: 70px;
+}
+
+.comments form textarea {
+	width: 350px;
+	height: 70px;
+	margin: 2px;
+	resize: vertical;
+}
+
+.comments .flash {
+	padding: 4px;
+}

@@ -1,0 +1,8 @@
+log/*
+temp/*
+!temp/cache/
+!temp/sessions/
+
+*.pnproj
+.DS_STORE
+nbproject
