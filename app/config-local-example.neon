@@ -1,0 +1,15 @@
+common:
+
+	parameters:
+		database:
+			driver: "mysql"
+			host: "localhost"
+			database: "components-demo"
+			user: "root"
+			password: ""
+
+
+production < common:
+
+
+development < common:

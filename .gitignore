@@ -1,3 +1,4 @@
+app/config-local.neon
 log/*
 temp/*
 !temp/cache/
