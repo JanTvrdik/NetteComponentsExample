@@ -25,6 +25,13 @@ final class ArticlePresenter extends UI\Presenter
 		$this->template->article = $this->article;
 	}
 
+	/**
+	 * Zobrazí přehled všech článků s komentářovými komponentami. Ideální pro komentářové spammery.
+	 */
+	public function actionOverview()
+	{
+		$this->template->articles = $this->context->articlesService->getAll();
+	}
 
 	/**
 	 * Továrnička na komentářovou komponentu.
@@ -44,4 +51,26 @@ final class ArticlePresenter extends UI\Presenter
 
 		return $control;
 	}
+
+	/**
+	 * Vytvoří kouzelný kontejner. Kdokoliv ho požádá o subkomponentu, tak dostane instanci CommentsControl navázanou
+	 * na článek s ID stejným jako název komponenty.
+	 *
+	 * Tedy např. $this['magicContainer'][815] vrátí komponentu s názvem '815', která bude instancí CommentsControl
+	 * navázanou na článek s ID 815.
+	 *
+	 * @return   UI\Multiplier
+	 */
+	protected function createComponentMagicContainer()
+	{
+		$service = $this->context->commentsService;
+		return new UI\Multiplier(function ($id) use ($service) {
+			$control = new CommentsControl();
+			$control->setArticleId($id);
+			$control->setService($service);
+
+			return $control;
+		});
+	}
+
 }

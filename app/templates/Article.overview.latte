@@ -1,0 +1,16 @@
+{block #content}
+
+	<h1>Přehled článků</h1>
+
+	{foreach $articles as $article}
+
+		<h2>{$article->title}</h2>
+		<p>
+			{$article->content|truncate:400}
+			<a n:href="default, $article->id">zobrazit celý článek</a>
+		</p>
+		{control magicContainer-$article->id}
+
+	{/foreach}
+
+{/block}
