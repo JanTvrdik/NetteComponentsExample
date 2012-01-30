@@ -5,4 +5,7 @@
     {* Vypsání escapovaného obsahu článku se zachováním odřádkování. *}
     {!$article->content|escape|nl2br}
 
+    {* Vykreslení komponenty comments, ekvivalent $this['comments']->render() *}
+    {control comments}
+
 {/block}
