@@ -8,15 +8,15 @@
 class CommentsService extends Nette\Object
 {
 
-	/** @var     DibiConnection */
+	/** @var     Nette\Database\Context */
 	private $db;
 
 	/**
 	 * Class constructor
 	 *
-	 * @param    DibiConnection
+	 * @param    Nette\Database\Context
 	 */
-	public function __construct(DibiConnection $db)
+	public function __construct(Nette\Database\Context $db)
 	{
 		$this->db = $db;
 	}
@@ -31,7 +31,7 @@ class CommentsService extends Nette\Object
 	 */
 	public function addComment($articleId, $author, $text)
 	{
-		$this->db->query('INSERT INTO [comments]', array(
+		$this->db->query('INSERT INTO `comments`', array(
 			'articleId' => $articleId,
 			'date' => new DateTime('now'),
 			'author' => $author,
@@ -48,8 +48,8 @@ class CommentsService extends Nette\Object
 	public function removeComment($id)
 	{
 		$this->db->query('
-			DELETE FROM [comments]
-			WHERE [id] = %i', $id
+			DELETE FROM `comments`
+			WHERE `id` = ?', $id
 		);
 	}
 
@@ -57,13 +57,13 @@ class CommentsService extends Nette\Object
 	 * Returns an array of comments for given article.
 	 *
 	 * @param    int
-	 * @return   array (# => DibiRow)
+	 * @return   Nette\Database\IRow[]
 	 */
 	public function getComments($articleId)
 	{
 		return $this->db->fetchAll('
-			SELECT * FROM [comments]
-			WHERE [articleId] = %i', $articleId
+			SELECT * FROM `comments`
+			WHERE `articleId` = ?', $articleId
 		);
 	}
 

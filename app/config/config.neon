@@ -1,5 +1,4 @@
 services:
-	dibiConnection: DibiConnection(%database%)
 	articlesService: ArticlesService
 	commentsService: CommentsService
 	routerFactory: RouterFactory

@@ -1,8 +1,7 @@
-parameters:
+nette:
 	database:
-		driver: "mysqli"
-		charset: "utf8mb4"
-		host: "localhost"
-		database: "components-demo"
+		dsn: "mysql:host=127.0.0.1;dbname=components-demo"
 		user: "root"
 		password: ""
+		options:
+			charset: "utf8mb4"

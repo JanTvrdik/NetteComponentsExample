@@ -8,15 +8,15 @@
 class ArticlesService extends Nette\Object
 {
 
-	/** @var     DibiConnection */
+	/** @var     Nette\Database\Context */
 	private $db;
 
 	/**
 	 * Class constructor
 	 *
-	 * @param    DibiConnection
+	 * @param    Nette\Database\Context
 	 */
-	public function __construct(DibiConnection $db)
+	public function __construct(Nette\Database\Context $db)
 	{
 		$this->db = $db;
 	}
@@ -25,27 +25,27 @@ class ArticlesService extends Nette\Object
 	 * Returns article or FALSE if article does not exist.
 	 *
 	 * @param    int
-	 * @return   DibiRow|FALSE
+	 * @return   Nette\Database\IRow|FALSE
 	 */
 	public function getArticle($id)
 	{
 		return $this->db->fetch('
 			SELECT *
-			FROM [articles]
-			WHERE [id] = %i', $id
+			FROM `articles`
+			WHERE `id` = ?', $id
 		);
 	}
 
 	/**
 	 * Returns all articles.
 	 *
-	 * @return   array (# => DibiRow)
+	 * @return   Nette\Database\IRow[]
 	 */
 	public function getAll()
 	{
 		return $this->db->fetchAll('
 			SELECT *
-			FROM [articles]
+			FROM `articles`
 		');
 	}
 

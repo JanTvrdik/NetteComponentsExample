@@ -9,7 +9,7 @@ use Nette\Application\UI;
 final class ArticlePresenter extends UI\Presenter
 {
 
-	/** @var     DibiRow */
+	/** @var     Nette\Database\IRow */
 	private $article;
 
 	/**

@@ -1,6 +1,5 @@
 {
 	"require": {
-		"nette/nette": "~2.2",
-		"dibi/dibi": "~2.2"
+		"nette/nette": "~2.2"
 	}
 }
