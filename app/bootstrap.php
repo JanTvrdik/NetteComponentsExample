@@ -2,13 +2,13 @@
 
 use Nette\Application\Routers\Route;
 
-require LIBS_DIR . '/Nette/loader.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 
 $configurator = new Nette\Config\Configurator;
 $configurator->setTempDirectory(__DIR__ . '/../temp');
 $configurator->enableDebugger(__DIR__ . '/../log');
-$configurator->createRobotLoader()->addDirectory(array(APP_DIR, LIBS_DIR))->register();
+$configurator->createRobotLoader()->addDirectory(__DIR__)->register();
 $configurator->addConfig(__DIR__ . '/config.neon');
 $configurator->addConfig(__DIR__ . '/config-local.neon');
 
