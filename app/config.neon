@@ -1,12 +1,4 @@
-common:
-
-	services:
-		dibiConnection: DibiConnection(%database%)
-		articlesService: ArticlesService
-		commentsService: CommentsService
-
-
-production < common:
-
-
-development < common:
+services:
+	dibiConnection: DibiConnection(%database%)
+	articlesService: ArticlesService
+	commentsService: CommentsService

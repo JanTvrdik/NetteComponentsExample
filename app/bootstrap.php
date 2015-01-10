@@ -5,7 +5,7 @@ use Nette\Application\Routers\Route;
 require __DIR__ . '/../vendor/autoload.php';
 
 
-$configurator = new Nette\Config\Configurator;
+$configurator = new Nette\Configurator;
 $configurator->setTempDirectory(__DIR__ . '/../temp');
 $configurator->enableDebugger(__DIR__ . '/../log');
 $configurator->createRobotLoader()->addDirectory(__DIR__)->register();

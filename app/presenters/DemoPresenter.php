@@ -1,7 +1,7 @@
 <?php
 
 use Nette\Application\UI;
-use Nette\Diagnostics\Debugger;
+use Tracy\Debugger;
 
 
 /**
