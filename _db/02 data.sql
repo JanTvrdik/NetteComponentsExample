@@ -1,8 +1,8 @@
--- Adminer 3.3.0 MySQL dump
+-- Adminer 4.1.0 MySQL dump
 
 SET NAMES utf8;
+SET time_zone = '+00:00';
 SET foreign_key_checks = 0;
-SET time_zone = 'SYSTEM';
 SET sql_mode = 'NO_AUTO_VALUE_ON_ZERO';
 
 INSERT INTO `articles` (`id`, `title`, `content`) VALUES
@@ -10,4 +10,5 @@ INSERT INTO `articles` (`id`, `title`, `content`) VALUES
 (2,	'Donec in ligula',	'Fusce hendrerit tincidunt risus, quis aliquet odio congue vitae. Aenean a augue in nisl rhoncus lacinia tincidunt non mi. Donec in ligula id odio egestas suscipit. Etiam erat quam, euismod eget condimentum fringilla, tempus sed erat. Quisque ullamcorper dapibus mauris, at laoreet metus rutrum a. Vivamus sem nisl, volutpat in tristique sed, aliquet vitae sapien. Aliquam nunc mauris, porttitor a congue ut, dapibus eget dui. Vestibulum sodales, velit vel consectetur cursus, quam dolor rhoncus velit, eget imperdiet lectus augue ac lectus. Integer interdum, ligula viverra eleifend lobortis, diam est pharetra ante, ut lacinia lorem quam et massa. Maecenas et fermentum lectus. Donec pellentesque dictum ante, in aliquet leo euismod id. Cras turpis felis, aliquam at viverra eget, euismod vitae lacus. Nunc non eros ipsum, in consectetur risus. Integer in risus dignissim leo placerat semper nec non leo. Aliquam id libero ipsum. Maecenas ac diam magna.\n\nDuis sed dui id dui feugiat sollicitudin et eu ligula. Nunc vel metus sit amet lectus lobortis pulvinar sed sed arcu. Integer bibendum dignissim arcu ac ornare. Proin eget lacinia dolor. Nam sagittis, odio sit amet adipiscing pharetra, lacus dui tempor est, id iaculis lacus est eget elit. Sed eget lacus ac eros adipiscing dictum. Nam iaculis sapien a mi tempor venenatis.'),
 (3,	'Vestibulum nec augue',	'Nam placerat nisi id diam vulputate congue sed at orci. Donec porttitor iaculis metus eu ultrices. Cras rhoncus commodo nisl in laoreet. Maecenas consequat vestibulum nulla non dignissim. Morbi in ligula eu diam pharetra cursus. Aliquam non enim at dui dignissim molestie. Aliquam erat volutpat. Sed vulputate massa eget elit interdum eu elementum enim pellentesque. Nunc sollicitudin eleifend cursus. Etiam volutpat, lectus porta tristique congue, orci ipsum molestie eros, eget pulvinar nunc nunc in neque. Morbi ac nibh dolor. Ut viverra magna libero, in condimentum odio. Suspendisse massa eros, suscipit ut consequat quis, sagittis ac est. In sodales placerat neque, auctor suscipit neque tempor ut.\n\nPellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum nec augue et eros porta vestibulum. Sed convallis ultrices varius. Quisque fermentum mollis ligula elementum auctor. Phasellus tristique nisi a eros dignissim et venenatis nisi faucibus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce nisi justo, vehicula scelerisque lacinia ac, sagittis id odio. Donec dictum, elit id posuere suscipit, mi enim viverra risus, quis feugiat metus purus eu diam. Lorem ipsum dolor sit amet, consectetur adipiscing elit.');
 
--- 2012-01-30 13:22:51
+
+-- 2015-01-10 10:53:42

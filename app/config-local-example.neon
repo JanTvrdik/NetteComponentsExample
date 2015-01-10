@@ -1,6 +1,7 @@
 parameters:
 	database:
 		driver: "mysql"
+		charset: "utf8mb4"
 		host: "localhost"
 		database: "components-demo"
 		user: "root"
