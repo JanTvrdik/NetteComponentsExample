@@ -1,9 +1,3 @@
-app/config/config-local.neon
-log/*
-temp/*
-!temp/cache/
-!temp/sessions/
-
-*.pnproj
-.DS_STORE
-nbproject
+/app/config/config-local.neon
+/log/*
+/temp/*
