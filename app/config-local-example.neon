@@ -1,6 +1,6 @@
 parameters:
 	database:
-		driver: "mysql"
+		driver: "mysqli"
 		charset: "utf8mb4"
 		host: "localhost"
 		database: "components-demo"
