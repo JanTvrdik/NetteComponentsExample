@@ -15,4 +15,5 @@ $configurator->addConfig(__DIR__ . '/config-local.neon');
 $container = $configurator->createContainer();
 $container->router[] = new Route('index.php', 'Demo:default', Route::ONE_WAY);
 $container->router[] = new Route('<presenter>[/<action>][/<id>]', 'Demo:default');
-$container->application->run();
+
+return $container;
