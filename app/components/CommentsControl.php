@@ -68,7 +68,7 @@ class CommentsControl extends UI\Control
 		$form->addTextArea('message', 'Text:')
 			->setRequired();
 		$form->addSubmit('send', 'Přidat komentář');
-		$form->onSuccess[] = callback($this, 'processAddCommentForm');
+		$form->onSuccess[] = array($this, 'processAddCommentForm');
 
 		return $form;
 	}
