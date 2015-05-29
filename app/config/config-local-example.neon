@@ -1,7 +1,7 @@
-nette:
-	database:
-		dsn: "mysql:host=127.0.0.1;dbname=components-demo"
-		user: "root"
-		password: ""
-		options:
-			charset: "utf8mb4"
+database:
+	dsn: "mysql:host=127.0.0.1;dbname=components_demo"
+	user: "root"
+	password: ""
+
+di:
+	accessors: true
