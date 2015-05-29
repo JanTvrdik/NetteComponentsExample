@@ -11,6 +11,7 @@ class ArticlesService extends Nette\Object
 	/** @var     Nette\Database\Connection */
 	private $db;
 
+
 	/**
 	 * Class constructor
 	 *
@@ -20,6 +21,7 @@ class ArticlesService extends Nette\Object
 	{
 		$this->db = $db;
 	}
+
 
 	/**
 	 * Returns article or FALSE if article does not exist.
@@ -35,6 +37,7 @@ class ArticlesService extends Nette\Object
 			WHERE `id` = ?', $id
 		);
 	}
+
 
 	/**
 	 * Returns all articles.

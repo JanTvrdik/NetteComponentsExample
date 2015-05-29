@@ -22,6 +22,7 @@ class BoxControl extends UI\Control
 		$this->template->render();
 	}
 
+
 	/**
 	 * Továrnička na "foo". Bude automaticky zavolaná při pokusu o získání komponenty "foo".
 	 *

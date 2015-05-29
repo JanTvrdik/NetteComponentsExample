@@ -18,6 +18,7 @@ final class ArticlePresenter extends UI\Presenter
 	/** @var     CommentsService */
 	private $commentsService;
 
+
 	/**
 	 * Konstruktor sloužící pro předání závislostí.
 	 *
@@ -30,6 +31,7 @@ final class ArticlePresenter extends UI\Presenter
 		$this->articlesService = $articlesService;
 		$this->commentsService = $commentsService;
 	}
+
 
 	/**
 	 * Zobrazí článek s daným ID.
@@ -44,6 +46,7 @@ final class ArticlePresenter extends UI\Presenter
 		$this->template->article = $this->article;
 	}
 
+
 	/**
 	 * Zobrazí přehled všech článků s komentářovými komponentami. Ideální pro komentářové spammery.
 	 */
@@ -51,6 +54,7 @@ final class ArticlePresenter extends UI\Presenter
 	{
 		$this->template->articles = $this->articlesService->getAll();
 	}
+
 
 	/**
 	 * Továrnička na komentářovou komponentu.
@@ -70,6 +74,7 @@ final class ArticlePresenter extends UI\Presenter
 
 		return $control;
 	}
+
 
 	/**
 	 * Vytvoří kouzelný kontejner. Kdokoliv ho požádá o subkomponentu, tak dostane instanci CommentsControl navázanou

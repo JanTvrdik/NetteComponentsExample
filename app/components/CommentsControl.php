@@ -17,6 +17,7 @@ class CommentsControl extends UI\Control
 	/** @var     CommentsService */
 	private $service;
 
+
 	/**
 	 * Nastaví ID článku, ke kterému se budou komentáře vázat.
 	 *
@@ -28,6 +29,7 @@ class CommentsControl extends UI\Control
 		$this->articleId = $id;
 	}
 
+
 	/**
 	 * Vstříkne službu, kterou tato komponenta bude používat pro práci s komentáři.
 	 *
@@ -38,6 +40,7 @@ class CommentsControl extends UI\Control
 	{
 		$this->service = $service;
 	}
+
 
 	/**
 	 * Vykreslí komentářovou komponentu. Metoda render() je automaticky volaná při vykreslování komponenty pomocí makra {control ...}.
@@ -51,6 +54,7 @@ class CommentsControl extends UI\Control
 		$this->template->comments = $this->service->getComments($this->articleId);
 		$this->template->render();
 	}
+
 
 	/**
 	 * Továrnička na formulář pro přidávání komentářů.
@@ -73,6 +77,7 @@ class CommentsControl extends UI\Control
 		return $form;
 	}
 
+
 	/**
 	 * Zpracování formuláře na přidávání komentářů.
 	 *
@@ -87,6 +92,7 @@ class CommentsControl extends UI\Control
 		$this->flashMessage('Komentář byl úspěšně přidán, děkujeme.');
 		$this->redirect('this');
 	}
+
 
 	/**
 	 * Odstraní komentář s daným ID.

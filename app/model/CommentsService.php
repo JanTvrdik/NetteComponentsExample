@@ -11,6 +11,7 @@ class CommentsService extends Nette\Object
 	/** @var     Nette\Database\Connection */
 	private $db;
 
+
 	/**
 	 * Class constructor
 	 *
@@ -20,6 +21,7 @@ class CommentsService extends Nette\Object
 	{
 		$this->db = $db;
 	}
+
 
 	/**
 	 * Adds a new comment.
@@ -39,6 +41,7 @@ class CommentsService extends Nette\Object
 		));
 	}
 
+
 	/**
 	 * Removes a comment.
 	 *
@@ -52,6 +55,7 @@ class CommentsService extends Nette\Object
 			WHERE `id` = ?', $id
 		);
 	}
+
 
 	/**
 	 * Returns an array of comments for given article.

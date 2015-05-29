@@ -6,6 +6,7 @@ use Nette\Application\Routers\Route;
 
 class RouterFactory extends Nette\Object
 {
+
 	/**
 	 * @return IRouter
 	 */
@@ -13,4 +14,5 @@ class RouterFactory extends Nette\Object
 	{
 		return new Route('<presenter>/<action>', 'Demo:default');
 	}
+
 }

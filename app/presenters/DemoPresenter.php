@@ -38,6 +38,7 @@ final class DemoPresenter extends UI\Presenter
 		$this->dump($this['root-a-foo-foo'], 'Hraní s createComponentFoo()');
 	}
 
+
 	protected function createComponentRoot()
 	{
 		$control = new BoxControl();
@@ -52,6 +53,7 @@ final class DemoPresenter extends UI\Presenter
 
 		return $control;
 	}
+
 
 	private function dump($var, $title = NULL)
 	{
