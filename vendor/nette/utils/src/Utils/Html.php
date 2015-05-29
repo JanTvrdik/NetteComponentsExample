@@ -232,6 +232,21 @@ class Html extends Nette\Object implements \ArrayAccess, \Countable, \IteratorAg
 
 
 	/**
+	 * Setter for data-* attributes. Booleans are converted to 'true' resp. 'false'.
+	 * @return self
+	 */
+	public function data($name, $value = NULL)
+	{
+		if (func_num_args() === 1) {
+			$this->attrs['data'] = $name;
+		} else {
+			$this->attrs["data-$name"] = is_bool($value) ? json_encode($value) : $value;
+		}
+		return $this;
+	}
+
+
+	/**
 	 * Sets element's HTML content.
 	 * @param  string raw HTML string
 	 * @return self
@@ -275,7 +290,7 @@ class Html extends Nette\Object implements \ArrayAccess, \Countable, \IteratorAg
 	public function setText($text)
 	{
 		if (!is_array($text) && !$text instanceof self) {
-			$text = htmlspecialchars((string) $text, ENT_NOQUOTES);
+			$text = htmlspecialchars((string) $text, ENT_NOQUOTES, 'UTF-8');
 		}
 		return $this->setHtml($text);
 	}
@@ -414,9 +429,6 @@ class Html extends Nette\Object implements \ArrayAccess, \Countable, \IteratorAg
 	 */
 	public function getIterator()
 	{
-		if (func_num_args() && func_get_arg(0)) {
-			throw new Nette\DeprecatedException(__METHOD__ . " doesn't support deep iterator any more.");
-		}
 		return new \ArrayIterator($this->children);
 	}
 

@@ -27,6 +27,30 @@ class PgSqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 	}
 
 
+	public function convertException(\PDOException $e)
+	{
+		$code = isset($e->errorInfo[0]) ? $e->errorInfo[0] : NULL;
+		if ($code === '0A000' && strpos($e->getMessage(), 'truncate') !== FALSE) {
+			return Nette\Database\ForeignKeyConstraintViolationException::from($e);
+
+		} elseif ($code === '23502') {
+			return Nette\Database\NotNullConstraintViolationException::from($e);
+
+		} elseif ($code === '23503') {
+			return Nette\Database\ForeignKeyConstraintViolationException::from($e);
+
+		} elseif ($code === '23505') {
+			return Nette\Database\UniqueConstraintViolationException::from($e);
+
+		} elseif ($code === '08006') {
+			return Nette\Database\ConnectionException::from($e);
+
+		} else {
+			return Nette\Database\DriverException::from($e);
+		}
+	}
+
+
 	/********************* SQL ****************d*g**/
 
 
@@ -59,11 +83,22 @@ class PgSqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 
 
 	/**
+	 * Formats date-time interval for use in a SQL statement.
+	 */
+	public function formatDateInterval(\DateInterval $value)
+	{
+		throw new Nette\NotSupportedException;
+	}
+
+
+	/**
 	 * Encodes string for use in a LIKE statement.
 	 */
 	public function formatLike($value, $pos)
 	{
-		$value = strtr($value, array("'" => "''", '\\' => '\\\\', '%' => '\\\\%', '_' => '\\\\_'));
+		$bs = substr($this->connection->quote('\\', \PDO::PARAM_STR), 1, -1); // standard_conforming_strings = on/off
+		$value = substr($this->connection->quote($value, \PDO::PARAM_STR), 1, -1);
+		$value = strtr($value, array('%' => $bs . '%', '_' => $bs . '_', '\\' => '\\\\'));
 		return ($pos <= 0 ? "'%" : "'") . $value . ($pos >= 0 ? "%'" : "'");
 	}
 
@@ -103,7 +138,8 @@ class PgSqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 		foreach ($this->connection->query("
 			SELECT DISTINCT ON (c.relname)
 				c.relname::varchar AS name,
-				c.relkind = 'v' AS view
+				c.relkind = 'v' AS view,
+				n.nspname::varchar || '.' || c.relname::varchar AS \"fullName\"
 			FROM
 				pg_catalog.pg_class AS c
 				JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace
@@ -131,7 +167,7 @@ class PgSqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 				a.attname::varchar AS name,
 				c.relname::varchar AS table,
 				upper(t.typname) AS nativetype,
-				NULL AS size,
+				CASE WHEN a.atttypmod = -1 THEN NULL ELSE a.atttypmod -4 END AS size,
 				FALSE AS unsigned,
 				NOT (a.attnotnull OR t.typtype = 'd' AND t.typnotnull) AS nullable,
 				pg_catalog.pg_get_expr(ad.adbin, 'pg_catalog.pg_attrdef'::regclass)::varchar AS default,
@@ -204,7 +240,7 @@ class PgSqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 			SELECT
 				co.conname::varchar AS name,
 				al.attname::varchar AS local,
-				cf.relname::varchar AS table,
+				nf.nspname || '.' || cf.relname::varchar AS table,
 				af.attname::varchar AS foreign
 			FROM
 				pg_catalog.pg_constraint AS co
@@ -236,7 +272,7 @@ class PgSqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 	 */
 	public function isSupported($item)
 	{
-		return $item === self::SUPPORT_SEQUENCE || $item === self::SUPPORT_SUBSELECT;
+		return $item === self::SUPPORT_SEQUENCE || $item === self::SUPPORT_SUBSELECT || $item === self::SUPPORT_SCHEMA;
 	}
 
 

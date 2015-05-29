@@ -117,7 +117,7 @@ class Decoder
 				if ((!$hasKey && !$hasValue) || !$inlineParser) {
 					$this->error();
 				}
-				$this->addValue($result, $hasKey, $key, $hasValue ? $value : NULL);
+				$this->addValue($result, $hasKey ? $key : NULL, $hasValue ? $value : NULL);
 				$hasKey = $hasValue = FALSE;
 
 			} elseif ($t === ':' || $t === '=') { // KeyValuePair separator
@@ -159,7 +159,11 @@ class Decoder
 						$this->error();
 					}
 					$n++;
-					$value = new Entity($value, $this->parse(FALSE, array()));
+					if ($value instanceof Entity && $value->value === Neon::CHAIN) {
+						end($value->attributes)->attributes = $this->parse(FALSE, array());
+					} else {
+						$value = new Entity($value, $this->parse(FALSE, array()));
+					}
 				} else {
 					$n++;
 					$value = $this->parse(FALSE, array());
@@ -178,7 +182,7 @@ class Decoder
 			} elseif ($t[0] === "\n") { // Indent
 				if ($inlineParser) {
 					if ($hasKey || $hasValue) {
-						$this->addValue($result, $hasKey, $key, $hasValue ? $value : NULL);
+						$this->addValue($result, $hasKey ? $key : NULL, $hasValue ? $value : NULL);
 						$hasKey = $hasValue = FALSE;
 					}
 
@@ -205,7 +209,7 @@ class Decoder
 							$n++;
 							$this->error('Bad indentation');
 						}
-						$this->addValue($result, $key !== NULL, $key, $this->parse($newIndent));
+						$this->addValue($result, $key, $this->parse($newIndent));
 						$newIndent = isset($tokens[$n], $tokens[$n+1]) ? (string) substr($tokens[$n][0], 1) : ''; // not last
 						if (strlen($newIndent) > strlen($indent)) {
 							$n++;
@@ -218,7 +222,7 @@ class Decoder
 							break;
 
 						} elseif ($hasKey) {
-							$this->addValue($result, $key !== NULL, $key, $hasValue ? $value : NULL);
+							$this->addValue($result, $key, $hasValue ? $value : NULL);
 							if ($key !== NULL && !$hasValue && $newIndent === $indent && isset($tokens[$n + 1]) && $tokens[$n + 1][0] === '-') {
 								$result = & $result[$key];
 							}
@@ -231,22 +235,27 @@ class Decoder
 					}
 				}
 
-			} else { // Value
-				if ($hasValue) {
+			} elseif ($hasValue) { // Value
+				if ($value instanceof Entity) { // Entity chaining
+					if ($value->value !== Neon::CHAIN) {
+						$value = new Entity(Neon::CHAIN, array($value));
+					}
+					$value->attributes[] = new Entity($t);
+				} else {
 					$this->error();
 				}
+			} else { // Value
 				static $consts = array(
 					'true' => TRUE, 'True' => TRUE, 'TRUE' => TRUE, 'yes' => TRUE, 'Yes' => TRUE, 'YES' => TRUE, 'on' => TRUE, 'On' => TRUE, 'ON' => TRUE,
 					'false' => FALSE, 'False' => FALSE, 'FALSE' => FALSE, 'no' => FALSE, 'No' => FALSE, 'NO' => FALSE, 'off' => FALSE, 'Off' => FALSE, 'OFF' => FALSE,
+					'null' => 0, 'Null' => 0, 'NULL' => 0,
 				);
 				if ($t[0] === '"') {
 					$value = preg_replace_callback('#\\\\(?:ud[89ab][0-9a-f]{2}\\\\ud[c-f][0-9a-f]{2}|u[0-9a-f]{4}|x[0-9a-f]{2}|.)#i', array($this, 'cbString'), substr($t, 1, -1));
 				} elseif ($t[0] === "'") {
 					$value = substr($t, 1, -1);
 				} elseif (isset($consts[$t]) && (!isset($tokens[$n+1][0]) || ($tokens[$n+1][0] !== ':' && $tokens[$n+1][0] !== '='))) {
-					$value = $consts[$t];
-				} elseif ($t === 'null' || $t === 'Null' || $t === 'NULL') {
-					$value = NULL;
+					$value = $consts[$t] === 0 ? NULL : $consts[$t];
 				} elseif (is_numeric($t)) {
 					$value = $t * 1;
 				} elseif (preg_match('#\d\d\d\d-\d\d?-\d\d?(?:(?:[Tt]| +)\d\d?:\d\d:\d\d(?:\.\d*)? *(?:Z|[-+]\d\d?(?::\d\d)?)?)?\z#A', $t)) {
@@ -260,7 +269,7 @@ class Decoder
 
 		if ($inlineParser) {
 			if ($hasKey || $hasValue) {
-				$this->addValue($result, $hasKey, $key, $hasValue ? $value : NULL);
+				$this->addValue($result, $hasKey ? $key : NULL, $hasValue ? $value : NULL);
 			}
 		} else {
 			if ($hasValue && !$hasKey) { // block items must have "key"
@@ -270,22 +279,21 @@ class Decoder
 					$this->error();
 				}
 			} elseif ($hasKey) {
-				$this->addValue($result, $key !== NULL, $key, $hasValue ? $value : NULL);
+				$this->addValue($result, $key, $hasValue ? $value : NULL);
 			}
 		}
 		return $mainResult;
 	}
 
 
-	private function addValue(& $result, $hasKey, $key, $value)
+	private function addValue(& $result, $key, $value)
 	{
-		if ($hasKey) {
-			if ($result && array_key_exists($key, $result)) {
-				$this->error("Duplicated key '$key'");
-			}
-			$result[$key] = $value;
-		} else {
+		if ($key === NULL) {
 			$result[] = $value;
+		} elseif ($result && array_key_exists($key, $result)) {
+			$this->error("Duplicated key '$key'");
+		} else {
+			$result[$key] = $value;
 		}
 	}
 

@@ -23,15 +23,15 @@ class Helpers
 
 	/** @var array */
 	public static $typePatterns = array(
-		'^_' => IReflection::FIELD_TEXT, // PostgreSQL arrays
-		'BYTEA|BLOB|BIN' => IReflection::FIELD_BINARY,
-		'TEXT|CHAR|POINT|INTERVAL' => IReflection::FIELD_TEXT,
-		'YEAR|BYTE|COUNTER|SERIAL|INT|LONG|SHORT|^TINY$' => IReflection::FIELD_INTEGER,
-		'CURRENCY|REAL|MONEY|FLOAT|DOUBLE|DECIMAL|NUMERIC|NUMBER' => IReflection::FIELD_FLOAT,
-		'^TIME$' => IReflection::FIELD_TIME,
-		'TIME' => IReflection::FIELD_DATETIME, // DATETIME, TIMESTAMP
-		'DATE' => IReflection::FIELD_DATE,
-		'BOOL' => IReflection::FIELD_BOOL,
+		'^_' => IStructure::FIELD_TEXT, // PostgreSQL arrays
+		'BYTEA|BLOB|BIN' => IStructure::FIELD_BINARY,
+		'TEXT|CHAR|POINT|INTERVAL' => IStructure::FIELD_TEXT,
+		'YEAR|BYTE|COUNTER|SERIAL|INT|LONG|SHORT|^TINY$' => IStructure::FIELD_INTEGER,
+		'CURRENCY|REAL|MONEY|FLOAT|DOUBLE|DECIMAL|NUMERIC|NUMBER' => IStructure::FIELD_FLOAT,
+		'^TIME$' => IStructure::FIELD_TIME,
+		'TIME' => IStructure::FIELD_DATETIME, // DATETIME, TIMESTAMP
+		'DATE' => IStructure::FIELD_DATE,
+		'BOOL' => IStructure::FIELD_BOOL,
 	);
 
 
@@ -41,7 +41,7 @@ class Helpers
 	 */
 	public static function dumpResult(ResultSet $result)
 	{
-		echo "\n<table class=\"dump\">\n<caption>" . htmlSpecialChars($result->getQueryString()) . "</caption>\n";
+		echo "\n<table class=\"dump\">\n<caption>" . htmlSpecialChars($result->getQueryString(), ENT_IGNORE, 'UTF-8') . "</caption>\n";
 		if (!$result->getColumnCount()) {
 			echo "\t<tr>\n\t\t<th>Affected rows:</th>\n\t\t<td>", $result->getRowCount(), "</td>\n\t</tr>\n</table>\n";
 			return;
@@ -51,13 +51,13 @@ class Helpers
 			if ($i === 0) {
 				echo "<thead>\n\t<tr>\n\t\t<th>#row</th>\n";
 				foreach ($row as $col => $foo) {
-					echo "\t\t<th>" . htmlSpecialChars($col) . "</th>\n";
+					echo "\t\t<th>" . htmlSpecialChars($col, ENT_NOQUOTES, 'UTF-8') . "</th>\n";
 				}
 				echo "\t</tr>\n</thead>\n<tbody>\n";
 			}
 			echo "\t<tr>\n\t\t<th>", $i, "</th>\n";
 			foreach ($row as $col) {
-				echo "\t\t<td>", htmlSpecialChars($col), "</td>\n";
+				echo "\t\t<td>", htmlSpecialChars($col, ENT_NOQUOTES, 'UTF-8'), "</td>\n";
 			}
 			echo "\t</tr>\n";
 			$i++;
@@ -92,7 +92,7 @@ class Helpers
 		$sql = preg_replace('#([ \t]*\r?\n){2,}#', "\n", $sql);
 
 		// syntax highlight
-		$sql = htmlSpecialChars($sql);
+		$sql = htmlSpecialChars($sql, ENT_IGNORE, 'UTF-8');
 		$sql = preg_replace_callback("#(/\\*.+?\\*/)|(\\*\\*.+?\\*\\*)|(?<=[\\s,(])($keywords1)(?=[\\s,)])|(?<=[\\s,(=])($keywords2)(?=[\\s,)=])#is", function($matches) {
 			if (!empty($matches[1])) { // comment
 				return '<em style="color:gray">' . $matches[1] . '</em>';
@@ -121,7 +121,7 @@ class Helpers
 			} elseif (is_string($param)) {
 				$length = Nette\Utils\Strings::length($param);
 				$truncated = Nette\Utils\Strings::truncate($param, Helpers::$maxLength);
-				$text = htmlspecialchars($connection ? $connection->quote($truncated) : '\'' . $truncated . '\'');
+				$text = htmlspecialchars($connection ? $connection->quote($truncated) : '\'' . $truncated . '\'', ENT_NOQUOTES, 'UTF-8');
 				return '<span title="Length ' . $length . ' characters">' . $text . '</span>';
 
 			} elseif (is_resource($param)) {
@@ -129,10 +129,11 @@ class Helpers
 				if ($type === 'stream') {
 					$info = stream_get_meta_data($param);
 				}
-				return '<i' . (isset($info['uri']) ? ' title="' . htmlspecialchars($info['uri']) . '"' : NULL) . '>&lt;' . htmlSpecialChars($type) . ' resource&gt;</i> ';
+				return '<i' . (isset($info['uri']) ? ' title="' . htmlspecialchars($info['uri'], ENT_NOQUOTES, 'UTF-8') . '"' : NULL)
+					. '>&lt;' . htmlSpecialChars($type, ENT_NOQUOTES, 'UTF-8') . ' resource&gt;</i> ';
 
 			} else {
-				return htmlspecialchars($param);
+				return htmlspecialchars($param, ENT_NOQUOTES, 'UTF-8');
 			}
 		}, $sql);
 

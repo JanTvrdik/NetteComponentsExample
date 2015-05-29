@@ -79,6 +79,7 @@ class CoreMacros extends MacroSet
 		$me->addMacro('use', array($me, 'macroUse'));
 		$me->addMacro('contentType', array($me, 'macroContentType'));
 		$me->addMacro('status', array($me, 'macroStatus'));
+		$me->addMacro('php', array($me, 'macroExpr'));
 
 		$me->addMacro('class', NULL, NULL, array($me, 'macroClass'));
 		$me->addMacro('attr', NULL, NULL, array($me, 'macroAttr'));
@@ -283,6 +284,9 @@ class CoreMacros extends MacroSet
 	 */
 	public function macroClass(MacroNode $node, PhpWriter $writer)
 	{
+		if (isset($node->htmlNode->attrs['class'])) {
+			throw new CompileException('It is not possible to combine class with n:class.');
+		}
 		return $writer->write('if ($_l->tmp = array_filter(%node.array)) echo \' class="\' . %escape(implode(" ", array_unique($_l->tmp))) . \'"\'');
 	}
 
@@ -302,8 +306,10 @@ class CoreMacros extends MacroSet
 	public function macroDump(MacroNode $node, PhpWriter $writer)
 	{
 		$args = $writer->formatArgs();
-		return 'Tracy\Debugger::barDump(' . ($node->args ? $writer->write("array(%var => $args)", $args) : 'get_defined_vars()')
-			. ', "Template " . str_replace(dirname(dirname($template->getName())), "\xE2\x80\xA6", $template->getName()))';
+		return $writer->write(
+			'Tracy\Debugger::barDump(' . ($args ? "($args)" : 'get_defined_vars()'). ', %var)',
+			$args ?: 'variables'
+		);
 	}
 
 
@@ -371,7 +377,7 @@ class CoreMacros extends MacroSet
 	 */
 	public function macroExpr(MacroNode $node, PhpWriter $writer)
 	{
-		return $writer->write(($node->name === '?' ? '' : 'echo ') . '%modify(%node.args)');
+		return $writer->write(($node->name === '=' ? 'echo ' : '') . '%modify(%node.args)');
 	}
 
 

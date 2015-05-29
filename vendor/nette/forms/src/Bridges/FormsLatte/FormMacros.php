@@ -17,7 +17,7 @@ use Nette,
 
 
 /**
- * Macros for Nette\Forms.
+ * Latte macros for Nette\Forms.
  *
  * - {form name} ... {/form}
  * - {input name}
@@ -33,7 +33,7 @@ class FormMacros extends MacroSet
 	public static function install(Latte\Compiler $compiler)
 	{
 		$me = new static($compiler);
-		$me->addMacro('form', array($me, 'macroForm'), 'Nette\Bridges\FormsLatte\FormMacros::renderFormEnd($_form)');
+		$me->addMacro('form', array($me, 'macroForm'), 'echo Nette\Bridges\FormsLatte\Runtime::renderFormEnd($_form)');
 		$me->addMacro('formContainer', array($me, 'macroFormContainer'), '$formContainer = $_form = array_pop($_formStack)');
 		$me->addMacro('label', array($me, 'macroLabel'), array($me, 'macroLabelEnd'));
 		$me->addMacro('input', array($me, 'macroInput'), NULL, array($me, 'macroInputAttr'));
@@ -58,9 +58,8 @@ class FormMacros extends MacroSet
 			throw new CompileException("Missing form name in {{$node->name}}.");
 		}
 		$node->tokenizer->reset();
-		$node->replaced = TRUE;
 		return $writer->write(
-			'Nette\Bridges\FormsLatte\FormMacros::renderFormBegin($form = $_form = '
+			'echo Nette\Bridges\FormsLatte\Runtime::renderFormBegin($form = $_form = '
 			. ($name[0] === '$' ? 'is_object(%node.word) ? %node.word : ' : '')
 			. '$_control[%node.word], %node.array)'
 		);
@@ -145,7 +144,7 @@ class FormMacros extends MacroSet
 
 
 	/**
-	 * <form n:name>, <input n:name>, <select n:name>, <textarea n:name> and <label n:name>
+	 * <form n:name>, <input n:name>, <select n:name>, <textarea n:name>, <label n:name> and <button n:name>
 	 */
 	public function macroNameAttr(MacroNode $node, PhpWriter $writer)
 	{
@@ -155,12 +154,11 @@ class FormMacros extends MacroSet
 		}
 		$name = array_shift($words);
 		$tagName = strtolower($node->htmlNode->name);
-		$node->isEmpty = !in_array($tagName, array('form', 'select', 'textarea'), TRUE);
-		$node->replaced = TRUE;
+		$node->isEmpty = $tagName === 'input';
 
 		if ($tagName === 'form') {
 			return $writer->write(
-				'Nette\Bridges\FormsLatte\FormMacros::renderFormBegin($form = $_form = '
+				'echo Nette\Bridges\FormsLatte\Runtime::renderFormBegin($form = $_form = '
 					. ($name[0] === '$' ? 'is_object(%0.word) ? %0.word : ' : '')
 					. '$_control[%0.word], %1.var, FALSE)',
 				$name,
@@ -195,9 +193,17 @@ class FormMacros extends MacroSet
 	public function macroNameEnd(MacroNode $node, PhpWriter $writer)
 	{
 		preg_match('#^(.*? n:\w+>)(.*)(<[^?].*)\z#s', $node->content, $parts);
-		$node->replaced = TRUE;
-		if (strtolower($node->htmlNode->name) === 'form') {
-			$node->content = $parts[1] . $parts[2] . '<?php Nette\Bridges\FormsLatte\FormMacros::renderFormEnd($_form, FALSE) ?>' . $parts[3];
+		$tagName = strtolower($node->htmlNode->name);
+		if ($tagName === 'form') {
+			$node->content = $parts[1] . $parts[2] . '<?php echo Nette\Bridges\FormsLatte\Runtime::renderFormEnd($_form, FALSE) ?>' . $parts[3];
+		} elseif ($tagName === 'label') {
+			if ($node->htmlNode->isEmpty) {
+				$node->content = $parts[1] . '<?php echo $_input->getLabel()->getHtml() ?>' . $parts[3];
+			}
+		} elseif ($tagName === 'button') {
+			if ($node->htmlNode->isEmpty) {
+				$node->content = $parts[1] . '<?php echo htmlspecialchars($_input->caption) ?>' . $parts[3];
+			}
 		} else { // select, textarea
 			$node->content = $parts[1] . '<?php echo $_input->getControl()->getHtml() ?>' . $parts[3];
 		}
@@ -220,57 +226,17 @@ class FormMacros extends MacroSet
 	}
 
 
-	/********************* run-time writers ****************d*g**/
-
-
-	/**
-	 * Renders form begin.
-	 * @return void
-	 */
+	/** @deprecated */
 	public static function renderFormBegin(Form $form, array $attrs, $withTags = TRUE)
 	{
-		foreach ($form->getControls() as $control) {
-			$control->setOption('rendered', FALSE);
-		}
-		$el = $form->getElementPrototype();
-		$el->action = (string) $el->action;
-		$el = clone $el;
-		if (strcasecmp($form->getMethod(), 'get') === 0) {
-			$el->action = preg_replace('~\?[^#]*~', '', $el->action, 1);
-		}
-		$el->addAttributes($attrs);
-		echo $withTags ? $el->startTag() : $el->attributes();
+		echo Runtime::renderFormBegin($form, $attrs, $withTags);
 	}
 
 
-	/**
-	 * Renders form end.
-	 * @return string
-	 */
+	/** @deprecated */
 	public static function renderFormEnd(Form $form, $withTags = TRUE)
 	{
-		$s = '';
-		if (strcasecmp($form->getMethod(), 'get') === 0) {
-			foreach (preg_split('#[;&]#', parse_url($form->getElementPrototype()->action, PHP_URL_QUERY), NULL, PREG_SPLIT_NO_EMPTY) as $param) {
-				$parts = explode('=', $param, 2);
-				$name = urldecode($parts[0]);
-				if (!isset($form[$name])) {
-					$s .= Nette\Utils\Html::el('input', array('type' => 'hidden', 'name' => $name, 'value' => urldecode($parts[1])));
-				}
-			}
-		}
-
-		foreach ($form->getComponents(TRUE, 'Nette\Forms\Controls\HiddenField') as $control) {
-			if (!$control->getOption('rendered')) {
-				$s .= $control->getControl();
-			}
-		}
-
-		if (iterator_count($form->getComponents(TRUE, 'Nette\Forms\Controls\TextInput')) < 2) {
-			$s .= '<!--[if IE]><input type=IEbug disabled style="display:none"><![endif]-->';
-		}
-
-		echo ($s ? "<div>$s</div>\n" : '') . ($withTags ? $form->getElementPrototype()->endTag() . "\n" : '');
+		echo Runtime::renderFormEnd($form, $withTags);
 	}
 
 }

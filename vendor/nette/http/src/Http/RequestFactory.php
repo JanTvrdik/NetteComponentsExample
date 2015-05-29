@@ -19,7 +19,7 @@ use Nette,
 class RequestFactory extends Nette\Object
 {
 	/** @internal */
-	const CHARS = '#^[\x09\x0A\x0D\x20-\x7E\xA0-\x{10FFFF}]*+\z#u';
+	const CHARS = '\x09\x0A\x0D\x20-\x7E\xA0-\x{10FFFF}';
 
 	/** @var array */
 	public $urlFilters = array(
@@ -81,92 +81,57 @@ class RequestFactory extends Nette\Object
 		}
 
 		// path & query
-		if (isset($_SERVER['REQUEST_URI'])) { // Apache, IIS 6.0
-			$requestUrl = $_SERVER['REQUEST_URI'];
-
-		} elseif (isset($_SERVER['ORIG_PATH_INFO'])) { // IIS 5.0 (PHP as CGI ?)
-			$requestUrl = $_SERVER['ORIG_PATH_INFO'];
-			if (isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] != '') {
-				$requestUrl .= '?' . $_SERVER['QUERY_STRING'];
-			}
-		} else {
-			$requestUrl = '';
-		}
-
+		$requestUrl = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/';
 		$requestUrl = Strings::replace($requestUrl, $this->urlFilters['url']);
 		$tmp = explode('?', $requestUrl, 2);
-		$url->setPath(Strings::replace($tmp[0], $this->urlFilters['path']));
+		$path = Url::unescape($tmp[0], '%/?#');
+		$path = Strings::fixEncoding(Strings::replace($path, $this->urlFilters['path']));
+		$url->setPath($path);
 		$url->setQuery(isset($tmp[1]) ? $tmp[1] : '');
 
-		// normalized url
-		$url->canonicalize();
-		$url->setPath(Strings::fixEncoding($url->getPath()));
-
 		// detect script path
-		if (isset($_SERVER['SCRIPT_NAME'])) {
-			$script = $_SERVER['SCRIPT_NAME'];
-		} elseif (isset($_SERVER['DOCUMENT_ROOT'], $_SERVER['SCRIPT_FILENAME'])
-			&& strncmp($_SERVER['DOCUMENT_ROOT'], $_SERVER['SCRIPT_FILENAME'], strlen($_SERVER['DOCUMENT_ROOT'])) === 0
-		) {
-			$script = '/' . ltrim(strtr(substr($_SERVER['SCRIPT_FILENAME'], strlen($_SERVER['DOCUMENT_ROOT'])), '\\', '/'), '/');
-		} else {
-			$script = '/';
+		$lpath = strtolower($path);
+		$script = isset($_SERVER['SCRIPT_NAME']) ? strtolower($_SERVER['SCRIPT_NAME']) : '';
+		if ($lpath !== $script) {
+			$max = min(strlen($lpath), strlen($script));
+			for ($i = 0; $i < $max && $lpath[$i] === $script[$i]; $i++);
+			$path = $i ? substr($path, 0, strrpos($path, '/', $i - strlen($path) - 1) + 1) : '/';
 		}
-
-		$path = strtolower($url->getPath()) . '/';
-		$script = strtolower($script) . '/';
-		$max = min(strlen($path), strlen($script));
-		for ($i = 0; $i < $max; $i++) {
-			if ($path[$i] !== $script[$i]) {
-				break;
-			} elseif ($path[$i] === '/') {
-				$url->setScriptPath(substr($url->getPath(), 0, $i + 1));
-			}
-		}
+		$url->setScriptPath($path);
 
 		// GET, POST, COOKIE
 		$useFilter = (!in_array(ini_get('filter.default'), array('', 'unsafe_raw')) || ini_get('filter.default_flags'));
 
-		parse_str($url->getQuery(), $query);
-		if (!$query) {
-			$query = $useFilter ? filter_input_array(INPUT_GET, FILTER_UNSAFE_RAW) : (empty($_GET) ? array() : $_GET);
-		}
+		$query = $url->getQueryParameters();
 		$post = $useFilter ? filter_input_array(INPUT_POST, FILTER_UNSAFE_RAW) : (empty($_POST) ? array() : $_POST);
 		$cookies = $useFilter ? filter_input_array(INPUT_COOKIE, FILTER_UNSAFE_RAW) : (empty($_COOKIE) ? array() : $_COOKIE);
 
-		$gpc = (bool) get_magic_quotes_gpc();
+		if (get_magic_quotes_gpc()) {
+			$post = Helpers::stripslashes($post, $useFilter);
+			$cookies = Helpers::stripslashes($cookies, $useFilter);
+		}
 
-		// remove fucking quotes, control characters and check encoding
-		if ($gpc || !$this->binary) {
+		// remove invalid characters
+		$reChars = '#^[' . self::CHARS . ']*+\z#u';
+		if (!$this->binary) {
 			$list = array(& $query, & $post, & $cookies);
 			while (list($key, $val) = each($list)) {
 				foreach ($val as $k => $v) {
-					unset($list[$key][$k]);
-
-					if ($gpc) {
-						$k = stripslashes($k);
-					}
-
-					if (!$this->binary && is_string($k) && (!preg_match(self::CHARS, $k) || preg_last_error())) {
-						// invalid key -> ignore
+					if (is_string($k) && (!preg_match($reChars, $k) || preg_last_error())) {
+						unset($list[$key][$k]);
 
 					} elseif (is_array($v)) {
 						$list[$key][$k] = $v;
 						$list[] = & $list[$key][$k];
 
 					} else {
-						if ($gpc && !$useFilter) {
-							$v = stripSlashes($v);
-						}
-						if (!$this->binary && (!preg_match(self::CHARS, $v) || preg_last_error())) {
-							$v = '';
-						}
-						$list[$key][$k] = $v;
+						$list[$key][$k] = (string) preg_replace('#[^' . self::CHARS . ']+#u', '', $v);
 					}
 				}
 			}
 			unset($list, $key, $val, $k, $v);
 		}
+		$url->setQuery($query);
 
 
 		// FILES and create FileUpload objects
@@ -174,7 +139,7 @@ class RequestFactory extends Nette\Object
 		$list = array();
 		if (!empty($_FILES)) {
 			foreach ($_FILES as $k => $v) {
-				if (!$this->binary && is_string($k) && (!preg_match(self::CHARS, $k) || preg_last_error())) {
+				if (!$this->binary && is_string($k) && (!preg_match($reChars, $k) || preg_last_error())) {
 					continue;
 				}
 				$v['@'] = & $files[$k];
@@ -187,10 +152,10 @@ class RequestFactory extends Nette\Object
 				continue;
 
 			} elseif (!is_array($v['name'])) {
-				if ($gpc) {
+				if (get_magic_quotes_gpc()) {
 					$v['name'] = stripSlashes($v['name']);
 				}
-				if (!$this->binary && (!preg_match(self::CHARS, $v['name']) || preg_last_error())) {
+				if (!$this->binary && (!preg_match($reChars, $v['name']) || preg_last_error())) {
 					$v['name'] = '';
 				}
 				if ($v['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -200,7 +165,7 @@ class RequestFactory extends Nette\Object
 			}
 
 			foreach ($v['name'] as $k => $foo) {
-				if (!$this->binary && is_string($k) && (!preg_match(self::CHARS, $k) || preg_last_error())) {
+				if (!$this->binary && is_string($k) && (!preg_match($reChars, $k) || preg_last_error())) {
 					continue;
 				}
 				$list[] = array(
@@ -255,7 +220,21 @@ class RequestFactory extends Nette\Object
 			$method = $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'];
 		}
 
-		return new Request($url, $query, $post, $files, $cookies, $headers, $method, $remoteAddr, $remoteHost);
+		// raw body
+		$rawBodyCallback = function() {
+			static $rawBody;
+
+			if (PHP_VERSION_ID >= 50600) {
+				return file_get_contents('php://input');
+
+			} elseif ($rawBody === NULL) { // can be read only once in PHP < 5.6
+				$rawBody = (string) file_get_contents('php://input');
+			}
+
+			return $rawBody;
+		};
+
+		return new Request($url, NULL, $post, $files, $cookies, $headers, $method, $remoteAddr, $remoteHost, $rawBodyCallback);
 	}
 
 }

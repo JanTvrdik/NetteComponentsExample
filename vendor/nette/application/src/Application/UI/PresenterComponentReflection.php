@@ -103,7 +103,7 @@ class PresenterComponentReflection extends Nette\Reflection\ClassType
 		$cache = & self::$mcCache[strtolower($class . ':' . $method)];
 		if ($cache === NULL) try {
 			$cache = FALSE;
-			$rm = Nette\Reflection\Method::from($class, $method);
+			$rm = new \ReflectionMethod($class, $method);
 			$cache = $this->isInstantiable() && $rm->isPublic() && !$rm->isAbstract() && !$rm->isStatic();
 		} catch (\ReflectionException $e) {
 		}
@@ -122,13 +122,13 @@ class PresenterComponentReflection extends Nette\Reflection\ClassType
 			$name = $param->getName();
 			if (isset($args[$name])) { // NULLs are ignored
 				$res[$i++] = $args[$name];
-				$type = $param->isArray() ? 'array' : ($param->isDefaultValueAvailable() && $param->isOptional() ? gettype($param->getDefaultValue()) : 'NULL');
+				$type = $param->isArray() ? 'array' : ($param->isDefaultValueAvailable() ? gettype($param->getDefaultValue()) : 'NULL');
 				if (!self::convertType($res[$i-1], $type)) {
 					$mName = $method instanceof \ReflectionMethod ? $method->getDeclaringClass()->getName() . '::' . $method->getName() : $method->getName();
 					throw new BadRequestException("Invalid value for parameter '$name' in method $mName(), expected " . ($type === 'NULL' ? 'scalar' : $type) . ".");
 				}
 			} else {
-				$res[$i++] = $param->isDefaultValueAvailable() && $param->isOptional() ? $param->getDefaultValue() : ($param->isArray() ? array() : NULL);
+				$res[$i++] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : ($param->isArray() ? array() : NULL);
 			}
 		}
 		return $res;
@@ -160,6 +160,24 @@ class PresenterComponentReflection extends Nette\Reflection\ClassType
 			}
 		}
 		return TRUE;
+	}
+
+
+	/**
+	 * Returns an annotation value.
+	 * @return array|FALSE
+	 */
+	public static function parseAnnotation(\Reflector $ref, $name)
+	{
+		if (!preg_match_all("#[\\s*]@$name(?:\(\\s*([^)]*)\\s*\))?#", $ref->getDocComment(), $m)) {
+			return FALSE;
+		}
+		$res = array();
+		foreach ($m[1] as $s) {
+			$arr = $s === '' ? array(TRUE) : preg_split('#\s*,\s*#', $s, -1, PREG_SPLIT_NO_EMPTY);
+			$res = array_merge($res, $arr);
+		}
+		return $res;
 	}
 
 }

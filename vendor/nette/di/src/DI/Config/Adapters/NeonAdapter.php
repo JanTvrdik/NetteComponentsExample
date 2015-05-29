@@ -9,6 +9,7 @@ namespace Nette\DI\Config\Adapters;
 
 use Nette,
 	Nette\DI\Config\Helpers,
+	Nette\DI\Statement,
 	Nette\Neon;
 
 
@@ -57,8 +58,21 @@ class NeonAdapter extends Nette\Object implements Nette\DI\Config\IAdapter
 
 			if (is_array($val)) {
 				$val = $this->process($val);
+
 			} elseif ($val instanceof Neon\Entity) {
-				$val = (object) array('value' => $val->value, 'attributes' => $this->process($val->attributes));
+				if ($val->value === Neon\Neon::CHAIN) {
+					$tmp = NULL;
+					foreach ($this->process($val->attributes) as $st) {
+						$tmp = new Statement(
+							$tmp === NULL ? $st->getEntity() : array($tmp, ltrim($st->getEntity(), ':')),
+							$st->arguments
+						);
+					}
+					$val = $tmp;
+				} else {
+					$tmp = $this->process(array($val->value));
+					$val = new Statement($tmp[0], $this->process($val->attributes));
+				}
 			}
 			$res[$key] = $val;
 		}

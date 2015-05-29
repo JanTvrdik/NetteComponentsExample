@@ -28,6 +28,12 @@ class SqlsrvDriver extends Nette\Object implements Nette\Database\ISupplementalD
 	}
 
 
+	public function convertException(\PDOException $e)
+	{
+		return Nette\Database\DriverException::from($e);
+	}
+
+
 	/********************* SQL ****************d*g**/
 
 
@@ -57,6 +63,15 @@ class SqlsrvDriver extends Nette\Object implements Nette\Database\ISupplementalD
 	{
 		/** @see http://msdn.microsoft.com/en-us/library/ms187819.aspx */
 		return $value->format("'Y-m-d H:i:s'");
+	}
+
+
+	/**
+	 * Formats date-time interval for use in a SQL statement.
+	 */
+	public function formatDateInterval(\DateInterval $value)
+	{
+		throw new Nette\NotSupportedException;
 	}
 
 

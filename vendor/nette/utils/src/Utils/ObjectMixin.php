@@ -141,12 +141,7 @@ class ObjectMixin
 			}
 
 		} elseif (isset($methods[$name])) { // public method as closure getter
-			if (PHP_VERSION_ID >= 50400) {
-				$rm = new \ReflectionMethod($class, $name);
-				$val = $rm->getClosure($_this);
-			} else {
-				$val = Callback::closure($_this, $name);
-			}
+			$val = Callback::closure($_this, $name);
 			return $val;
 
 		} else { // strict class
@@ -366,7 +361,7 @@ class ObjectMixin
 	public static function setExtensionMethod($class, $name, $callback)
 	{
 		$name = strtolower($name);
-		self::$extMethods[$name][$class] = Callback::closure($callback);
+		self::$extMethods[$name][$class] = Callback::check($callback);
 		self::$extMethods[$name][''] = NULL;
 	}
 

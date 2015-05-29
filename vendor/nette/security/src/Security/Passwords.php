@@ -17,7 +17,6 @@ use Nette;
  */
 class Passwords
 {
-	const PASSWORD_MAX_LENGTH = 4096;
 	const BCRYPT_COST = 10;
 
 

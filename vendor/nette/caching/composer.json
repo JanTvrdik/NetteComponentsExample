@@ -20,7 +20,8 @@
 	},
 	"require-dev": {
 		"nette/tester": "~1.0",
-		"latte/latte": "~2.2.2"
+		"nette/di": "~2.3",
+		"latte/latte": "~2.3"
 	},
 	"conflict": {
 		"nette/nette": "<2.2"
@@ -28,5 +29,10 @@
 	"autoload": {
 		"classmap": ["src/"]
 	},
-	"minimum-stability": "dev"
+	"minimum-stability": "dev",
+	"extra": {
+		"branch-alias": {
+			"dev-master": "2.3-dev"
+		}
+	}
 }

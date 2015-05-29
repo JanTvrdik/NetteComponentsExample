@@ -94,6 +94,46 @@ class Helpers extends Nette\Object
 
 
 	/**
+	 * @return array
+	 */
+	public static function exportRules(Rules $rules)
+	{
+		$payload = array();
+		foreach ($rules as $rule) {
+			if (!is_string($op = $rule->validator)) {
+				if (!Nette\Utils\Callback::isStatic($op)) {
+					continue;
+				}
+				$op = Nette\Utils\Callback::toString($op);
+			}
+			if ($rule->branch) {
+				$item = array(
+					'op' => ($rule->isNegative ? '~' : '') . $op,
+					'rules' => static::exportRules($rule->branch),
+					'control' => $rule->control->getHtmlName()
+				);
+				if ($rule->branch->getToggles()) {
+					$item['toggle'] = $rule->branch->getToggles();
+				}
+			} else {
+				$item = array('op' => ($rule->isNegative ? '~' : '') . $op, 'msg' => Validator::formatMessage($rule, FALSE));
+			}
+
+			if (is_array($rule->arg)) {
+				foreach ($rule->arg as $key => $value) {
+					$item['arg'][$key] = $value instanceof IControl ? array('control' => $value->getHtmlName()) : $value;
+				}
+			} elseif ($rule->arg !== NULL) {
+				$item['arg'] = $rule->arg instanceof IControl ? array('control' => $rule->arg->getHtmlName()) : $rule->arg;
+			}
+
+			$payload[] = $item;
+		}
+		return $payload;
+	}
+
+
+	/**
 	 * @return string
 	 */
 	public static function createInputList(array $items, array $inputAttrs = NULL, array $labelAttrs = NULL, $wrapper = NULL)
@@ -116,7 +156,7 @@ class Helpers extends Nette\Object
 			$res .= ($res === '' && $wrapperEnd === '' ? '' : $wrapper)
 				. $labelTag . $label->attributes() . '>'
 				. $inputTag . $input->attributes() . (Html::$xhtml ? ' />' : '>')
-				. ($caption instanceof Html ? $caption : htmlspecialchars($caption))
+				. ($caption instanceof Html ? $caption : htmlspecialchars($caption, ENT_NOQUOTES, 'UTF-8'))
 				. '</label>'
 				. $wrapperEnd;
 		}
@@ -125,7 +165,7 @@ class Helpers extends Nette\Object
 
 
 	/**
-	 * @return Nette\Utils\Html
+	 * @return Html
 	 */
 	public static function createSelectBox(array $items, array $optionAttrs = NULL)
 	{
@@ -149,7 +189,7 @@ class Helpers extends Nette\Object
 					$res .= $caption->setName('option')->addAttributes($option->attrs);
 				} else {
 					$res .= $optionTag . $option->attributes() . '>'
-						. htmlspecialchars($caption)
+						. htmlspecialchars($caption, ENT_NOQUOTES, 'UTF-8')
 						. '</option>';
 				}
 			}

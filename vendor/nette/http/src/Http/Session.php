@@ -63,6 +63,9 @@ class Session extends Nette\Object
 	/** @var IResponse */
 	private $response;
 
+	/** @var \SessionHandlerInterface */
+	private $handler;
+
 
 	public function __construct(IRequest $request, IResponse $response)
 	{
@@ -84,20 +87,25 @@ class Session extends Nette\Object
 
 		$this->configure($this->options);
 
-		$id = & $_COOKIE[session_name()];
-		if (!is_string($id) || !preg_match('#^[0-9a-zA-Z,-]{22,128}\z#i', $id)) {
+		$id = $this->request->getCookie(session_name());
+		if (is_string($id) && preg_match('#^[0-9a-zA-Z,-]{22,128}\z#i', $id)) {
+			session_id($id);
+		} else {
 			unset($_COOKIE[session_name()]);
 		}
 
-		// session_start returns FALSE on failure only sometimes
-		Nette\Utils\Callback::invokeSafe('session_start', array(), function($message) use (& $error) {
-			$error = $message;
-		});
+		try {
+			// session_start returns FALSE on failure only sometimes
+			Nette\Utils\Callback::invokeSafe('session_start', array(), function ($message) use (& $e) {
+				$e = new Nette\InvalidStateException($message);
+			});
+		} catch (\Exception $e) {
+		}
 
-		$this->response->removeDuplicateCookies();
-		if ($error) {
+		Helpers::removeDuplicateCookies();
+		if ($e) {
 			@session_write_close(); // this is needed
-			throw new Nette\InvalidStateException($error);
+			throw $e;
 		}
 
 		self::$started = TRUE;
@@ -224,7 +232,7 @@ class Session extends Nette\Object
 			$backup = $_SESSION;
 			session_start();
 			$_SESSION = $backup;
-			$this->response->removeDuplicateCookies();
+			Helpers::removeDuplicateCookies();
 		}
 		$this->regenerated = TRUE;
 	}
@@ -431,6 +439,10 @@ class Session extends Nette\Object
 				$this->sendCookie();
 			}
 		}
+
+		if ($this->handler) {
+			session_set_save_handler($this->handler);
+		}
 	}
 
 
@@ -522,7 +534,7 @@ class Session extends Nette\Object
 		if (self::$started) {
 			throw new Nette\InvalidStateException('Unable to set handler when session has been started.');
 		}
-		session_set_save_handler($handler);
+		$this->handler = $handler;
 		return $this;
 	}
 

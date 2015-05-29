@@ -129,7 +129,6 @@ class DefaultFormRenderer extends Nette\Object implements Nette\Forms\IFormRende
 	{
 		if ($this->form !== $form) {
 			$this->form = $form;
-			$this->init();
 		}
 
 		$s = '';
@@ -149,26 +148,6 @@ class DefaultFormRenderer extends Nette\Object implements Nette\Forms\IFormRende
 			$s .= $this->renderEnd();
 		}
 		return $s;
-	}
-
-
-	/**
-	 * Initializes form.
-	 * @return void
-	 */
-	protected function init()
-	{
-		$wrapper = & $this->wrappers['control'];
-		foreach ($this->form->getControls() as $control) {
-			if ($control->isRequired() && isset($wrapper['.required'])) {
-				$control->getLabelPrototype()->class($wrapper['.required'], TRUE);
-			}
-
-			$el = $control->getControlPrototype();
-			if ($el->getName() === 'input' && isset($wrapper['.' . $el->type])) {
-				$el->class($wrapper['.' . $el->type], TRUE);
-			}
-		}
 	}
 
 
@@ -406,7 +385,12 @@ class DefaultFormRenderer extends Nette\Object implements Nette\Forms\IFormRende
 				$description = '';
 			}
 
-			$s[] = $control->getControl() . $description;
+			$control->setOption('rendered', TRUE);
+			$el = $control->getControl();
+			if ($el instanceof Html && $el->getName() === 'input') {
+				$el->class($this->getValue("control .$el->type"), TRUE);
+			}
+			$s[] = $el . $description;
 		}
 		$pair = $this->getWrapper('pair container');
 		$pair->add($this->renderLabel($control));
@@ -425,6 +409,9 @@ class DefaultFormRenderer extends Nette\Object implements Nette\Forms\IFormRende
 		$label = $control->getLabel();
 		if ($label instanceof Html) {
 			$label->add($suffix);
+			if ($control->isRequired()) {
+				$label->class($this->getValue('control .required'), TRUE);
+			}
 		} elseif ($label != NULL) { // @intentionally ==
 			$label .= $suffix;
 		}
@@ -458,14 +445,18 @@ class DefaultFormRenderer extends Nette\Object implements Nette\Forms\IFormRende
 			$description = $this->getValue('control requiredsuffix') . $description;
 		}
 
+		$control->setOption('rendered', TRUE);
 		$el = $control->getControl();
+		if ($el instanceof Html && $el->getName() === 'input') {
+			$el->class($this->getValue("control .$el->type"), TRUE);
+		}
 		return $body->setHtml($el . $description . $this->renderErrors($control));
 	}
 
 
 	/**
 	 * @param  string
-	 * @return Nette\Utils\Html
+	 * @return Html
 	 */
 	protected function getWrapper($name)
 	{

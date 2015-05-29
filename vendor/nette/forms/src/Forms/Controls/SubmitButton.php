@@ -20,10 +20,10 @@ use Nette;
  */
 class SubmitButton extends Button implements Nette\Forms\ISubmitterControl
 {
-	/** @var array of function(SubmitButton $sender); Occurs when the button is clicked and form is successfully validated */
+	/** @var callable[]  function(SubmitButton $sender); Occurs when the button is clicked and form is successfully validated */
 	public $onClick;
 
-	/** @var array of function(SubmitButton $sender); Occurs when the button is clicked and form is not validated */
+	/** @var callable[]  function(SubmitButton $sender); Occurs when the button is clicked and form is not validated */
 	public $onInvalidClick;
 
 	/** @var array */
@@ -120,17 +120,6 @@ class SubmitButton extends Button implements Nette\Forms\ISubmitterControl
 			'formnovalidate' => $this->validationScope !== NULL,
 			'data-nette-validation-scope' => $scope ?: NULL,
 		));
-	}
-
-
-	/**
-	 * Submitted validator: has been button pressed?
-	 * @return bool
-	 * @internal
-	 */
-	public static function validateSubmitted(SubmitButton $control)
-	{
-		return $control->isSubmittedBy();
 	}
 
 }

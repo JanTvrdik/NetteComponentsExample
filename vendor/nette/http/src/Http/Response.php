@@ -53,7 +53,8 @@ class Response extends Nette\Object implements IResponse
 		}
 
 		if (PHP_VERSION_ID >= 50401) { // PHP bug #61106
-			header_register_callback($this->removeDuplicateCookies); // requires closure due PHP bug #66375
+			$rm = new \ReflectionMethod('Nette\Http\Helpers::removeDuplicateCookies');
+			header_register_callback($rm->getClosure()); // requires closure due PHP bug #66375
 		}
 	}
 
@@ -151,7 +152,7 @@ class Response extends Nette\Object implements IResponse
 		$this->setCode($code);
 		$this->setHeader('Location', $url);
 		if (preg_match('#^https?:|^\s*+[a-z0-9+.-]*+[^:]#i', $url)) {
-			$escapedUrl = htmlSpecialChars($url, ENT_IGNORE | ENT_QUOTES);
+			$escapedUrl = htmlSpecialChars($url, ENT_IGNORE | ENT_QUOTES, 'UTF-8');
 			echo "<h1>Redirect</h1>\n\n<p><a href=\"$escapedUrl\">Please click here to continue</a>.</p>";
 		}
 	}
@@ -173,7 +174,7 @@ class Response extends Nette\Object implements IResponse
 
 		$time = DateTime::from($time);
 		$this->setHeader('Cache-Control', 'max-age=' . ($time->format('U') - time()));
-		$this->setHeader('Expires', self::date($time));
+		$this->setHeader('Expires', Helpers::formatDate($time));
 		return $this;
 	}
 
@@ -223,15 +224,11 @@ class Response extends Nette\Object implements IResponse
 
 
 	/**
-	 * Returns HTTP valid date format.
-	 * @param  string|int|DateTime
-	 * @return string
+	 * @deprecated
 	 */
 	public static function date($time = NULL)
 	{
-		$time = DateTime::from($time);
-		$time->setTimezone(new \DateTimeZone('GMT'));
-		return $time->format('D, d M Y H:i:s \G\M\T');
+		return Helpers::formatDate($time);
 	}
 
 
@@ -274,7 +271,7 @@ class Response extends Nette\Object implements IResponse
 			$secure === NULL ? $this->cookieSecure : (bool) $secure,
 			$httpOnly === NULL ? $this->cookieHttpOnly : (bool) $httpOnly
 		);
-		$this->removeDuplicateCookies();
+		Helpers::removeDuplicateCookies();
 		return $this;
 	}
 
@@ -294,27 +291,10 @@ class Response extends Nette\Object implements IResponse
 	}
 
 
-	/**
-	 * Removes duplicate cookies from response.
-	 * @return void
-	 * @internal
-	 */
+	/** @internal @deprecated */
 	public function removeDuplicateCookies()
 	{
-		if (headers_sent($file, $line) || ini_get('suhosin.cookie.encrypt')) {
-			return;
-		}
-
-		$flatten = array();
-		foreach (headers_list() as $header) {
-			if (preg_match('#^Set-Cookie: .+?=#', $header, $m)) {
-				$flatten[$m[0]] = $header;
-				header_remove('Set-Cookie');
-			}
-		}
-		foreach (array_values($flatten) as $key => $header) {
-			header($header, $key === 0);
-		}
+		trigger_error('Use Nette\Http\Helpers::removeDuplicateCookies()', E_USER_WARNING);
 	}
 
 

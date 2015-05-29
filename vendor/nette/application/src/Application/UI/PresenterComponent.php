@@ -184,11 +184,7 @@ abstract class PresenterComponent extends Nette\ComponentModel\Container impleme
 	 */
 	public function getParameter($name, $default = NULL)
 	{
-		if (func_num_args() === 0) {
-			trigger_error('Calling ' . __METHOD__ . ' with no arguments to get all parameters is deprecated, use getParameters() instead.', E_USER_DEPRECATED);
-			return $this->params;
-
-		} elseif (isset($this->params[$name])) {
+		if (isset($this->params[$name])) {
 			return $this->params[$name];
 
 		} else {
@@ -234,10 +230,10 @@ abstract class PresenterComponent extends Nette\ComponentModel\Container impleme
 	 */
 	public static function getPersistentParams()
 	{
-		$rc = new Nette\Reflection\ClassType(get_called_class());
+		$rc = new \ReflectionClass(get_called_class());
 		$params = array();
 		foreach ($rc->getProperties(\ReflectionProperty::IS_PUBLIC) as $rp) {
-			if (!$rp->isStatic() && $rp->hasAnnotation('persistent')) {
+			if (!$rp->isStatic() && PresenterComponentReflection::parseAnnotation($rp, 'persistent')) {
 				$params[] = $rp->getName();
 			}
 		}
@@ -279,7 +275,7 @@ abstract class PresenterComponent extends Nette\ComponentModel\Container impleme
 
 	/**
 	 * Generates URL to presenter, action or signal.
-	 * @param  string   destination in format "[[module:]presenter:]action" or "signal!" or "this"
+	 * @param  string   destination in format "[//] [[[module:]presenter:]action | signal! | this] [#fragment]"
 	 * @param  array|mixed
 	 * @return string
 	 * @throws InvalidLinkException
@@ -297,7 +293,7 @@ abstract class PresenterComponent extends Nette\ComponentModel\Container impleme
 
 	/**
 	 * Returns destination as Link object.
-	 * @param  string   destination in format "[[module:]presenter:]view" or "signal!"
+	 * @param  string   destination in format "[//] [[[module:]presenter:]action | signal! | this] [#fragment]"
 	 * @param  array|mixed
 	 * @return Link
 	 */
@@ -309,7 +305,7 @@ abstract class PresenterComponent extends Nette\ComponentModel\Container impleme
 
 	/**
 	 * Determines whether it links to the current page.
-	 * @param  string   destination in format "[[module:]presenter:]action" or "signal!" or "this"
+	 * @param  string   destination in format "[//] [[[module:]presenter:]action | signal! | this] [#fragment]"
 	 * @param  array|mixed
 	 * @return bool
 	 * @throws InvalidLinkException
@@ -326,7 +322,7 @@ abstract class PresenterComponent extends Nette\ComponentModel\Container impleme
 	/**
 	 * Redirect to another presenter, action or signal.
 	 * @param  int      [optional] HTTP error code
-	 * @param  string   destination in format "[[module:]presenter:]view" or "signal!"
+	 * @param  string   destination in format "[//] [[[module:]presenter:]action | signal! | this] [#fragment]"
 	 * @param  array|mixed
 	 * @return void
 	 * @throws Nette\Application\AbortException
@@ -334,13 +330,12 @@ abstract class PresenterComponent extends Nette\ComponentModel\Container impleme
 	public function redirect($code, $destination = NULL, $args = array())
 	{
 		if (!is_numeric($code)) { // first parameter is optional
-			$args = $destination;
+			$args = is_array($destination) ? $destination : array_slice(func_get_args(), 1);
 			$destination = $code;
 			$code = NULL;
-		}
 
-		if (!is_array($args)) {
-			$args = array_slice(func_get_args(), is_numeric($code) ? 2 : 1);
+		} elseif (!is_array($args)) {
+			$args = array_slice(func_get_args(), 2);
 		}
 
 		$presenter = $this->getPresenter();

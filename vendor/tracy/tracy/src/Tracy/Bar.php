@@ -17,7 +17,7 @@ use Tracy;
  */
 class Bar
 {
-	/** @var string[] */
+	/** @deprecated */
 	public $info = array();
 
 	/** @var IBarPanel[] */
@@ -78,7 +78,7 @@ class Bar
 					'id' => "error-$idHtml",
 					'tab' => "Error in $id",
 					'panel' => '<h1>Error: ' . $id . '</h1><div class="tracy-inner">'
-						. nl2br(htmlSpecialChars($e, ENT_IGNORE)) . '</div>',
+						. nl2br(htmlSpecialChars($e, ENT_IGNORE, 'UTF-8')) . '</div>',
 				);
 				while (ob_get_level() > $obLevel) { // restore ob-level if broken
 					ob_end_clean();
@@ -106,8 +106,7 @@ class Bar
 		}
 		$session = NULL;
 
-		$info = array_filter($this->info);
-		require __DIR__ . '/templates/bar.phtml';
+		require __DIR__ . '/assets/Bar/bar.phtml';
 	}
 
 }

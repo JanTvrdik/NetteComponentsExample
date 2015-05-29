@@ -147,31 +147,29 @@ class Image extends Nette\Object
 			throw new Nette\NotSupportedException('PHP extension GD is not loaded.');
 		}
 
+		static $funcs = array(
+			self::JPEG => 'imagecreatefromjpeg',
+			self::PNG => 'imagecreatefrompng',
+			self::GIF => 'imagecreatefromgif',
+		);
 		$info = @getimagesize($file); // @ - files smaller than 12 bytes causes read error
+		$format = $info[2];
 
-		switch ($format = $info[2]) {
-			case self::JPEG:
-				return new static(imagecreatefromjpeg($file));
-
-			case self::PNG:
-				return new static(imagecreatefrompng($file));
-
-			case self::GIF:
-				return new static(imagecreatefromgif($file));
-
-			default:
-				throw new UnknownImageFileException("Unknown image type or file '$file' not found.");
+		if (!isset($funcs[$format])) {
+			throw new UnknownImageFileException(is_file($file) ? "Unknown type of file '$file'." : "File '$file' not found.");
 		}
+		return new static(Callback::invokeSafe($funcs[$format], array($file), function($message) {
+			throw new ImageException($message);
+		}));
 	}
 
 
 	/**
-	 * Get format from the image stream in the string.
-	 * @param  string
-	 * @return mixed  detected image format
+	 * @deprecated
 	 */
 	public static function getFormatFromString($s)
 	{
+		trigger_error(__METHOD__ . '() is deprecated; use finfo_buffer() instead.', E_USER_DEPRECATED);
 		$types = array('image/jpeg' => self::JPEG, 'image/gif' => self::GIF, 'image/png' => self::PNG);
 		$type = finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $s);
 		return isset($types[$type]) ? $types[$type] : NULL;
@@ -191,9 +189,14 @@ class Image extends Nette\Object
 			throw new Nette\NotSupportedException('PHP extension GD is not loaded.');
 		}
 
-		$format = static::getFormatFromString($s);
+		if (func_num_args() > 1) {
+			trigger_error(__METHOD__ . '() second argument $format is deprecated; use finfo_buffer() instead.', E_USER_DEPRECATED);
+			$format = @static::getFormatFromString($s);
+		}
 
-		return new static(imagecreatefromstring($s));
+		return new static(Callback::invokeSafe('imagecreatefromstring', array($s), function($message) {
+			throw new ImageException($message);
+		}));
 	}
 
 
@@ -484,8 +487,18 @@ class Image extends Nette\Object
 			);
 
 		} elseif ($opacity <> 0) {
+			$cutting = imagecreatetruecolor($image->getWidth(), $image->getHeight());
+			imagecopy(
+				$cutting, $this->image,
+				0, 0, $left, $top, $image->getWidth(), $image->getHeight()
+			);
+			imagecopy(
+				$cutting, $image->getImageResource(),
+				0, 0, 0, 0, $image->getWidth(), $image->getHeight()
+			);
+
 			imagecopymerge(
-				$this->image, $image->getImageResource(),
+				$this->image, $cutting,
 				$left, $top, 0, 0, $image->getWidth(), $image->getHeight(),
 				$opacity
 			);
@@ -530,7 +543,7 @@ class Image extends Nette\Object
 				return imagegif($this->image, $file);
 
 			default:
-				throw new Nette\InvalidArgumentException('Unsupported image type.');
+				throw new Nette\InvalidArgumentException('Unsupported image type \'$type\'.');
 		}
 	}
 
@@ -575,7 +588,7 @@ class Image extends Nette\Object
 	public function send($type = self::JPEG, $quality = NULL)
 	{
 		if ($type !== self::GIF && $type !== self::PNG && $type !== self::JPEG) {
-			throw new Nette\InvalidArgumentException('Unsupported image type.');
+			throw new Nette\InvalidArgumentException('Unsupported image type \'$type\'.');
 		}
 		header('Content-Type: ' . image_type_to_mime_type($type));
 		return $this->save(NULL, $quality, $type);
@@ -626,8 +639,16 @@ class Image extends Nette\Object
 
 
 /**
+ * The exception that is thrown when an image error occurs.
+ */
+class ImageException extends \Exception
+{
+}
+
+
+/**
  * The exception that indicates invalid image file.
  */
-class UnknownImageFileException extends \Exception
+class UnknownImageFileException extends ImageException
 {
 }

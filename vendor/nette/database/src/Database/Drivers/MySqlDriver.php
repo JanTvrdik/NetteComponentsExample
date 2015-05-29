@@ -27,18 +27,44 @@ class MySqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 
 	/**
 	 * Driver options:
-	 *   - charset => character encoding to set (default is utf8)
+	 *   - charset => character encoding to set (default is utf8 or utf8mb4 since MySQL 5.5.3)
 	 *   - sqlmode => see http://dev.mysql.com/doc/refman/5.0/en/server-sql-mode.html
 	 */
 	public function __construct(Nette\Database\Connection $connection, array $options)
 	{
 		$this->connection = $connection;
-		$charset = isset($options['charset']) ? $options['charset'] : 'utf8';
+		$charset = isset($options['charset'])
+			? $options['charset']
+			: (version_compare($connection->getPdo()->getAttribute(\PDO::ATTR_SERVER_VERSION), '5.5.3', '>=') ? 'utf8mb4' : 'utf8');
 		if ($charset) {
 			$connection->query("SET NAMES '$charset'");
 		}
 		if (isset($options['sqlmode'])) {
 			$connection->query("SET sql_mode='$options[sqlmode]'");
+		}
+	}
+
+
+	/**
+	 * @return Nette\Database\DriverException
+	 */
+	public function convertException(\PDOException $e)
+	{
+		$code = isset($e->errorInfo[1]) ? $e->errorInfo[1] : NULL;
+		if (in_array($code, array(1216, 1217, 1451, 1452, 1701), TRUE)) {
+			return Nette\Database\ForeignKeyConstraintViolationException::from($e);
+
+		} elseif (in_array($code, array(1062, 1557, 1569, 1586), TRUE)) {
+			return Nette\Database\UniqueConstraintViolationException::from($e);
+
+		} elseif ($code >= 2001 && $code <= 2028) {
+			return Nette\Database\ConnectionException::from($e);
+
+		} elseif (in_array($code, array(1048, 1121, 1138, 1171, 1252, 1263, 1566), TRUE)) {
+			return Nette\Database\NotNullConstraintViolationException::from($e);
+
+		} else {
+			return Nette\Database\DriverException::from($e);
 		}
 	}
 
@@ -71,6 +97,15 @@ class MySqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 	public function formatDateTime(/*\DateTimeInterface*/ $value)
 	{
 		return $value->format("'Y-m-d H:i:s'");
+	}
+
+
+	/**
+	 * Formats date-time interval for use in a SQL statement.
+	 */
+	public function formatDateInterval(\DateInterval $value)
+	{
+		return $value->format("'%r%h:%I:%S'");
 	}
 
 
@@ -197,8 +232,8 @@ class MySqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 			$meta = $statement->getColumnMeta($col);
 			if (isset($meta['native_type'])) {
 				$types[$meta['name']] = $type = Nette\Database\Helpers::detectType($meta['native_type']);
-				if ($type === Nette\Database\IReflection::FIELD_TIME) {
-					$types[$meta['name']] = Nette\Database\IReflection::FIELD_TIME_INTERVAL;
+				if ($type === Nette\Database\IStructure::FIELD_TIME) {
+					$types[$meta['name']] = Nette\Database\IStructure::FIELD_TIME_INTERVAL;
 				}
 			}
 		}

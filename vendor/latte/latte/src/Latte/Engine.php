@@ -15,16 +15,19 @@ namespace Latte;
  */
 class Engine extends Object
 {
-	/** Content types */
-	const CONTENT_HTML = Compiler::CONTENT_HTML,
-		CONTENT_XHTML = Compiler::CONTENT_XHTML,
-		CONTENT_XML = Compiler::CONTENT_XML,
-		CONTENT_JS = Compiler::CONTENT_JS,
-		CONTENT_CSS = Compiler::CONTENT_CSS,
-		CONTENT_ICAL = Compiler::CONTENT_ICAL,
-		CONTENT_TEXT = Compiler::CONTENT_TEXT;
+	const VERSION = '2.3.2';
 
-	/** @var array */
+	/** Content types */
+	const CONTENT_HTML = 'html',
+		CONTENT_XHTML = 'xhtml',
+		CONTENT_XML = 'xml',
+		CONTENT_JS = 'js',
+		CONTENT_CSS = 'css',
+		CONTENT_URL = 'url',
+		CONTENT_ICAL = 'ical',
+		CONTENT_TEXT = 'text';
+
+	/** @var callable[] */
 	public $onCompile = array();
 
 	/** @var Parser */
@@ -77,9 +80,6 @@ class Engine extends Object
 		'upper' => 'Latte\Runtime\Filters::upper',
 	);
 
-	/** @var string */
-	private $baseTemplateClass = 'Latte\Template';
-
 
 	/**
 	 * Renders template to output.
@@ -87,8 +87,13 @@ class Engine extends Object
 	 */
 	public function render($name, array $params = array())
 	{
-		$template = new $this->baseTemplateClass($params, $this->filters, $this, $name);
-		$this->loadCacheFile($name, $template->getParameters());
+		$class = $this->getTemplateClass($name);
+		if (!class_exists($class, FALSE)) {
+			$this->loadCacheFile($name);
+		}
+
+		$template = new $class($params, $this, $name);
+		$template->render();
 	}
 
 
@@ -121,19 +126,24 @@ class Engine extends Object
 		$this->onCompile = array();
 
 		$source = $this->getLoader()->getContent($name);
+
 		try {
 			$tokens = $this->getParser()->setContentType($this->contentType)
 				->parse($source);
-			$code = $this->getCompiler()->setContentType($this->contentType)
-				->compile($tokens);
 
-			if (!preg_match('#\n|\?#', $name)) {
-				$code = "<?php\n// source: $name\n?>" . $code;
-			}
+			$code = $this->getCompiler()->setContentType($this->contentType)
+				->compile($tokens, $this->getTemplateClass($name));
 
 		} catch (\Exception $e) {
-			$e = $e instanceof CompileException ? $e : new CompileException("Thrown exception '{$e->getMessage()}'", NULL, $e);
-			throw $e->setSource($source, $this->getCompiler()->getLine(), $name);
+			if (!$e instanceof CompileException) {
+				$e = new CompileException("Thrown exception '{$e->getMessage()}'", NULL, $e);
+			}
+			$line = isset($tokens) ? $this->getCompiler()->getLine() : $this->getParser()->getLine();
+			throw $e->setSource($source, $line, $name);
+		}
+
+		if (!preg_match('#\n|\?#', $name)) {
+			$code = "<?php\n// source: $name\n?>" . $code;
 		}
 		$code = Helpers::optimizePhp($code);
 		return $code;
@@ -143,46 +153,52 @@ class Engine extends Object
 	/**
 	 * @return void
 	 */
-	private function loadCacheFile($name, $params)
+	private function loadCacheFile($name)
 	{
 		if (!$this->tempDirectory) {
-			return call_user_func(function() {
-				foreach (func_get_arg(1) as $__k => $__v) {
-					$$__k = $__v;
-				}
-				unset($__k, $__v);
-				eval('?>' . func_get_arg(0));
-			}, $this->compile($name), $params);
+			eval('?>' . $this->compile($name));
+			return;
 		}
 
 		$file = $this->getCacheFile($name);
-		$handle = fopen($file, 'c+');
-		if (!$handle) {
-			throw new \RuntimeException("Unable to open or create file '$file'.");
-		}
-		flock($handle, LOCK_SH);
-		$stat = fstat($handle);
-		if (!$stat['size'] || ($this->autoRefresh && $this->getLoader()->isExpired($name, $stat['mtime']))) {
-			ftruncate($handle, 0);
-			flock($handle, LOCK_EX);
-			$stat = fstat($handle);
-			if (!$stat['size']) {
-				$code = $this->compile($name);
-				if (fwrite($handle, $code, strlen($code)) !== strlen($code)) {
-					ftruncate($handle, 0);
-					throw new \RuntimeException("Unable to write file '$file'.");
-				}
-			}
-			flock($handle, LOCK_SH); // holds the lock
+
+		if (!$this->isExpired($file, $name) && (@include $file) !== FALSE) { // @ - file may not exist
+			return;
 		}
 
-		call_user_func(function() {
-			foreach (func_get_arg(1) as $__k => $__v) {
-				$$__k = $__v;
+		if (!is_dir($this->tempDirectory)) {
+			@mkdir($this->tempDirectory); // @ - directory may already exist
+		}
+
+		$handle = fopen("$file.lock", 'c+');
+		if (!$handle || !flock($handle, LOCK_EX)) {
+			throw new \RuntimeException("Unable to acquire exclusive lock '$file.lock'.");
+		}
+
+		if (!is_file($file) || $this->isExpired($file, $name)) {
+			$code = $this->compile($name);
+			if (file_put_contents("$file.tmp", $code) !== strlen($code) || !rename("$file.tmp", $file)) {
+				@unlink("$file.tmp"); // @ - file may not exist
+				throw new \RuntimeException("Unable to create '$file'.");
 			}
-			unset($__k, $__v);
-			include func_get_arg(0);
-		}, $file, $params);
+		}
+
+		if ((include $file) === FALSE) {
+			throw new \RuntimeException("Unable to load '$file'.");
+		}
+
+		flock($handle, LOCK_UN);
+	}
+
+
+	/**
+	 * @param  string
+	 * @param  string
+	 * @return bool
+	 */
+	private function isExpired($file, $name)
+	{
+		return $this->autoRefresh && $this->getLoader()->isExpired($name, (int) @filemtime($file)); // @ - file may not exist
 	}
 
 
@@ -191,19 +207,20 @@ class Engine extends Object
 	 */
 	public function getCacheFile($name)
 	{
-		if (!$this->tempDirectory) {
-			throw new \RuntimeException('Set path to temporary directory using setTempDirectory().');
-		} elseif (!is_dir($this->tempDirectory)) {
-			@mkdir($this->tempDirectory); // High concurrency
-			if (!is_dir($this->tempDirectory)) {
-				throw new \RuntimeException("Temporary directory cannot be created. Check access rights");
-			}
-		}
-		$file = md5($name);
+		$file = $this->getTemplateClass($name);
 		if (preg_match('#\b\w.{10,50}$#', $name, $m)) {
 			$file = trim(preg_replace('#\W+#', '-', $m[0]), '-') . '-' . $file;
 		}
 		return $this->tempDirectory . '/' . $file . '.php';
+	}
+
+
+	/**
+	 * @return string
+	 */
+	public function getTemplateClass($name)
+	{
+		return 'Template' . md5("$this->tempDirectory\00$name");
 	}
 
 
