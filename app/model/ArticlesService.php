@@ -8,15 +8,15 @@
 class ArticlesService extends Nette\Object
 {
 
-	/** @var     Nette\Database\Context */
+	/** @var     Nette\Database\Connection */
 	private $db;
 
 	/**
 	 * Class constructor
 	 *
-	 * @param    Nette\Database\Context
+	 * @param    Nette\Database\Connection
 	 */
-	public function __construct(Nette\Database\Context $db)
+	public function __construct(Nette\Database\Connection $db)
 	{
 		$this->db = $db;
 	}
