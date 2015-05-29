@@ -12,6 +12,25 @@ final class ArticlePresenter extends UI\Presenter
 	/** @var     Nette\Database\IRow */
 	private $article;
 
+	/** @var     ArticlesService */
+	private $articlesService;
+
+	/** @var     CommentsService */
+	private $commentsService;
+
+	/**
+	 * Konstruktor sloužící pro předání závislostí.
+	 *
+	 * @param    ArticlesService
+	 * @param    CommentsService
+	 */
+	public function __construct(ArticlesService $articlesService, CommentsService $commentsService)
+	{
+		parent::__construct();
+		$this->articlesService = $articlesService;
+		$this->commentsService = $commentsService;
+	}
+
 	/**
 	 * Zobrazí článek s daným ID.
 	 *
@@ -19,7 +38,7 @@ final class ArticlePresenter extends UI\Presenter
 	 */
 	public function actionDefault($id)
 	{
-		$this->article = $this->context->articlesService->getArticle($id);
+		$this->article = $this->articlesService->getArticle($id);
 		if (!$this->article) $this->error('Article not found');
 
 		$this->template->article = $this->article;
@@ -30,7 +49,7 @@ final class ArticlePresenter extends UI\Presenter
 	 */
 	public function actionOverview()
 	{
-		$this->template->articles = $this->context->articlesService->getAll();
+		$this->template->articles = $this->articlesService->getAll();
 	}
 
 	/**
@@ -47,7 +66,7 @@ final class ArticlePresenter extends UI\Presenter
 
 		$control = new CommentsControl();
 		$control->setArticleId($this->article->id);
-		$control->setService($this->context->commentsService);
+		$control->setService($this->commentsService);
 
 		return $control;
 	}
@@ -63,7 +82,7 @@ final class ArticlePresenter extends UI\Presenter
 	 */
 	protected function createComponentMagicContainer()
 	{
-		$service = $this->context->commentsService;
+		$service = $this->commentsService;
 		return new UI\Multiplier(function ($id) use ($service) {
 			$control = new CommentsControl();
 			$control->setArticleId($id);

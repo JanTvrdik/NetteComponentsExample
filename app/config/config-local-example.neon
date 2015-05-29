@@ -2,6 +2,3 @@ database:
 	dsn: "mysql:host=127.0.0.1;dbname=components_demo"
 	user: "root"
 	password: ""
-
-di:
-	accessors: true
