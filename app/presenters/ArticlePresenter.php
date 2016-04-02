@@ -22,8 +22,8 @@ final class ArticlePresenter extends UI\Presenter
 	/**
 	 * Konstruktor sloužící pro předání závislostí.
 	 *
-	 * @param    ArticlesService
-	 * @param    CommentsService
+	 * @param    ArticlesService $articlesService
+	 * @param    CommentsService $commentsService
 	 */
 	public function __construct(ArticlesService $articlesService, CommentsService $commentsService)
 	{
@@ -36,7 +36,7 @@ final class ArticlePresenter extends UI\Presenter
 	/**
 	 * Zobrazí článek s daným ID.
 	 *
-	 * @param    int               ID článku
+	 * @param    int $id
 	 */
 	public function actionDefault($id)
 	{

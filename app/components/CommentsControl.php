@@ -21,7 +21,7 @@ class CommentsControl extends UI\Control
 	/**
 	 * Nastaví ID článku, ke kterému se budou komentáře vázat.
 	 *
-	 * @param    int
+	 * @param    int $id
 	 * @return   void
 	 */
 	public function setArticleId($id)
@@ -33,7 +33,7 @@ class CommentsControl extends UI\Control
 	/**
 	 * Vstříkne službu, kterou tato komponenta bude používat pro práci s komentáři.
 	 *
-	 * @param    CommentsService
+	 * @param    CommentsService $service
 	 * @return   void
 	 */
 	public function setService(CommentsService $service)
@@ -82,7 +82,7 @@ class CommentsControl extends UI\Control
 	 * Zpracování formuláře na přidávání komentářů.
 	 *
 	 * @todo     Metoda neřeší, že $this->articleId může být NULL nebo může odkazovat na neexistují článek.
-	 * @param    UI\Form           odeslaný formulář, jehož instanci by šlo také získat pomocí $this['addCommentForm']
+	 * @param    UI\Form $form     odeslaný formulář, jehož instanci by šlo také získat pomocí $this['addCommentForm']
 	 * @return   void
 	 */
 	public function processAddCommentForm(UI\Form $form)
@@ -97,7 +97,7 @@ class CommentsControl extends UI\Control
 	/**
 	 * Odstraní komentář s daným ID.
 	 *
-	 * @param    int               ID komentáře
+	 * @param    int $id           ID komentáře
 	 * @return   void
 	 */
 	public function handleDelete($id)

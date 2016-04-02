@@ -15,7 +15,7 @@ class ArticlesService extends Nette\Object
 	/**
 	 * Class constructor
 	 *
-	 * @param    Nette\Database\Connection
+	 * @param    Nette\Database\Connection $db
 	 */
 	public function __construct(Nette\Database\Connection $db)
 	{
@@ -26,7 +26,7 @@ class ArticlesService extends Nette\Object
 	/**
 	 * Returns article or FALSE if article does not exist.
 	 *
-	 * @param    int
+	 * @param    int $id
 	 * @return   Nette\Database\IRow|FALSE
 	 */
 	public function getArticle($id)

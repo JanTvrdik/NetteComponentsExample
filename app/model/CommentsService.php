@@ -15,7 +15,7 @@ class CommentsService extends Nette\Object
 	/**
 	 * Class constructor
 	 *
-	 * @param    Nette\Database\Connection
+	 * @param    Nette\Database\Connection $db
 	 */
 	public function __construct(Nette\Database\Connection $db)
 	{
@@ -26,9 +26,9 @@ class CommentsService extends Nette\Object
 	/**
 	 * Adds a new comment.
 	 *
-	 * @param    int
-	 * @param    string            author's name
-	 * @param    string            comment text
+	 * @param    int    $articleId
+	 * @param    string $author author's name
+	 * @param    string $text   comment text
 	 * @return   void
 	 */
 	public function addComment($articleId, $author, $text)
@@ -45,7 +45,7 @@ class CommentsService extends Nette\Object
 	/**
 	 * Removes a comment.
 	 *
-	 * @param    int
+	 * @param    int $id
 	 * @return   void
 	 */
 	public function removeComment($id)
@@ -60,7 +60,7 @@ class CommentsService extends Nette\Object
 	/**
 	 * Returns an array of comments for given article.
 	 *
-	 * @param    int
+	 * @param    int $articleId
 	 * @return   Nette\Database\IRow[]
 	 */
 	public function getComments($articleId)
