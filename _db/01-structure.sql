@@ -1,9 +1,5 @@
--- Adminer 4.1.0 MySQL dump
-
-SET NAMES utf8;
-SET time_zone = '+00:00';
 SET foreign_key_checks = 0;
-SET sql_mode = 'NO_AUTO_VALUE_ON_ZERO';
+
 
 DROP TABLE IF EXISTS `articles`;
 CREATE TABLE `articles` (
@@ -25,6 +21,3 @@ CREATE TABLE `comments` (
   KEY `articleId` (`articleId`),
   CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`articleId`) REFERENCES `articles` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- 2015-01-10 10:53:25
