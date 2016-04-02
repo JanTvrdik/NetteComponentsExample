@@ -23,10 +23,10 @@ foreach ($iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterato
 		continue;
 
 	} elseif ($file->getExtension() === 'phtml') {
-		$s = preg_replace_callback('#<\?php (require |readfile\(|.*file_get_contents\().*?(/.+\.(js|css))\'\)* \?>#', function($m) use ($file) {
+		$s = preg_replace_callback('#<\?php (require |readfile\(|.*file_get_contents\().*?(/.+\.(js|css))\'\)* \?>#', function ($m) use ($file) {
 			return file_get_contents($file->getPath() . $m[2]);
 		}, $s);
-		$s = preg_replace_callback('#(<(script|style).*>)(.*)(</)#Uis', function($m) {
+		$s = preg_replace_callback('#(<(script|style).*>)(.*)(</)#Uis', function ($m) {
 			list(, $begin, $type, $s, $end) = $m;
 
 			if (strpos($s, '<?php') !== FALSE) {
@@ -37,7 +37,7 @@ foreach ($iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterato
 				curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 				curl_setopt($curl, CURLOPT_POST, 1);
 				curl_setopt($curl, CURLOPT_POSTFIELDS, 'output_info=compiled_code&js_code=' . urlencode($s));
-				$s = curl_exec($curl);
+				$s = curl_exec($curl) ?: $s;
 				curl_close($curl);
 
 			} elseif ($type === 'style') {

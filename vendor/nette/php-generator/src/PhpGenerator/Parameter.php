@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\PhpGenerator;
@@ -12,18 +12,16 @@ use Nette;
 
 /**
  * Method parameter description.
- *
- * @author     David Grudl
  */
 class Parameter extends Nette\Object
 {
 	/** @var string */
-	private $name;
+	private $name = '';
 
 	/** @var bool */
 	private $reference = FALSE;
 
-	/** @var string */
+	/** @var string|NULL */
 	private $typeHint;
 
 	/** @var bool */
@@ -38,27 +36,37 @@ class Parameter extends Nette\Object
 	 */
 	public static function from(\ReflectionParameter $from)
 	{
-		$param = new static;
-		$param->name = $from->getName();
+		$param = new static($from->getName());
 		$param->reference = $from->isPassedByReference();
-		try {
-			$param->typeHint = $from->isArray() ? 'array' : ($from->getClass() ? '\\' . $from->getClass()->getName() : '');
-		} catch (\ReflectionException $e) {
-			if (preg_match('#Class (.+) does not exist#', $e->getMessage(), $m)) {
-				$param->typeHint = '\\' . $m[1];
-			} else {
-				throw $e;
+		if (PHP_VERSION_ID >= 70000) {
+			$param->typeHint = $from->hasType() ? (string) $from->getType() : NULL;
+		} elseif ($from->isArray()) {
+			$param->typeHint = 'array';
+		} elseif (PHP_VERSION_ID >= 50400 && $from->isCallable()) {
+			$param->typeHint = 'callable';
+		} else {
+			try {
+				$param->typeHint = $from->getClass() ? $from->getClass()->getName() : NULL;
+			} catch (\ReflectionException $e) {
+				if (preg_match('#Class (.+) does not exist#', $e->getMessage(), $m)) {
+					$param->typeHint = $m[1];
+				} else {
+					throw $e;
+				}
 			}
 		}
 		$param->optional = PHP_VERSION_ID < 50407 ? $from->isOptional() || ($param->typeHint && $from->allowsNull()) : $from->isDefaultValueAvailable();
 		$param->defaultValue = (PHP_VERSION_ID === 50316 ? $from->isOptional() : $from->isDefaultValueAvailable()) ? $from->getDefaultValue() : NULL;
-
-		$namespace = $from->getDeclaringClass()->getNamespaceName();
-		$namespace = $namespace ? "\\$namespace\\" : "\\";
-		if (Nette\Utils\Strings::startsWith($param->typeHint, $namespace)) {
-			$param->typeHint = substr($param->typeHint, strlen($namespace));
-		}
 		return $param;
+	}
+
+
+	/**
+	 * @param  string  without $
+	 */
+	public function __construct($name = '')
+	{
+		$this->setName($name);
 	}
 
 
@@ -103,18 +111,18 @@ class Parameter extends Nette\Object
 
 
 	/**
-	 * @param  string
+	 * @param  string|NULL
 	 * @return self
 	 */
 	public function setTypeHint($hint)
 	{
-		$this->typeHint = (string) $hint;
+		$this->typeHint = $hint ? (string) $hint : NULL;
 		return $this;
 	}
 
 
 	/**
-	 * @return string
+	 * @return string|NULL
 	 */
 	public function getTypeHint()
 	{

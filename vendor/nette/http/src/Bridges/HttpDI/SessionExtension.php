@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Bridges\HttpDI;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * Session extension for Nette DI.
- *
- * @author     David Grudl
  */
 class SessionExtension extends Nette\DI\CompilerExtension
 {
@@ -48,7 +46,7 @@ class SessionExtension extends Nette\DI\CompilerExtension
 
 		if ($this->debugMode && $config['debugger']) {
 			$session->addSetup('@Tracy\Bar::addPanel', array(
-				new Nette\DI\Statement('Nette\Bridges\HttpTracy\SessionPanel')
+				new Nette\DI\Statement('Nette\Bridges\HttpTracy\SessionPanel'),
 			));
 		}
 

@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Application;
@@ -12,13 +12,6 @@ use Nette;
 
 /**
  * Front Controller.
- *
- * @author     David Grudl
- *
- * @property-read array $requests
- * @property-read IPresenter $presenter
- * @property-read IRouter $router
- * @property-read IPresenterFactory $presenterFactory
  */
 class Application extends Nette\Object
 {
@@ -31,22 +24,22 @@ class Application extends Nette\Object
 	/** @var string */
 	public $errorPresenter;
 
-	/** @var callable[]  function(Application $sender); Occurs before the application loads presenter */
+	/** @var callable[]  function (Application $sender); Occurs before the application loads presenter */
 	public $onStartup;
 
-	/** @var callable[]  function(Application $sender, \Exception $e = NULL); Occurs before the application shuts down */
+	/** @var callable[]  function (Application $sender, \Exception $e = NULL); Occurs before the application shuts down */
 	public $onShutdown;
 
-	/** @var callable[]  function(Application $sender, Request $request); Occurs when a new request is received */
+	/** @var callable[]  function (Application $sender, Request $request); Occurs when a new request is received */
 	public $onRequest;
 
-	/** @var callable[]  function(Application $sender, Presenter $presenter); Occurs when a presenter is created */
+	/** @var callable[]  function (Application $sender, Presenter $presenter); Occurs when a presenter is created */
 	public $onPresenter;
 
-	/** @var callable[]  function(Application $sender, IResponse $response); Occurs when a new response is ready for dispatch */
+	/** @var callable[]  function (Application $sender, IResponse $response); Occurs when a new response is ready for dispatch */
 	public $onResponse;
 
-	/** @var callable[]  function(Application $sender, \Exception $e); Occurs when an unhandled exception occurs in the application */
+	/** @var callable[]  function (Application $sender, \Exception $e); Occurs when an unhandled exception occurs in the application */
 	public $onError;
 
 	/** @var Request[] */

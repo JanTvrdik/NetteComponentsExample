@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\PhpGenerator;
@@ -19,8 +19,6 @@ use Nette\Utils\Strings;
  * - namespace statement
  * - variable amount of use statements
  * - one or more class declarations
- *
- * @author Jakub Kulhan <jakub.kulhan@gmail.com>
  */
 class PhpNamespace extends Object
 {
@@ -44,16 +42,7 @@ class PhpNamespace extends Object
 
 
 	/**
-	 * @return string
-	 */
-	public function getName()
-	{
-		return $this->name;
-	}
-
-
-	/**
-	 * @param  string
+	 * @param  string|NULL
 	 * @return self
 	 */
 	public function setName($name)
@@ -64,11 +53,11 @@ class PhpNamespace extends Object
 
 
 	/**
-	 * @return bool
+	 * @return string|NULL
 	 */
-	public function getBracketedSyntax()
+	public function getName()
 	{
-		return $this->bracketedSyntax;
+		return $this->name ?: NULL;
 	}
 
 
@@ -85,11 +74,11 @@ class PhpNamespace extends Object
 
 
 	/**
-	 * @return string[]
+	 * @return bool
 	 */
-	public function getUses()
+	public function getBracketedSyntax()
 	{
-		return $this->uses;
+		return $this->bracketedSyntax;
 	}
 
 
@@ -131,11 +120,23 @@ class PhpNamespace extends Object
 
 
 	/**
+	 * @return string[]
+	 */
+	public function getUses()
+	{
+		return $this->uses;
+	}
+
+
+	/**
 	 * @param  string
 	 * @return string
 	 */
 	public function unresolveName($name)
 	{
+		if (in_array(strtolower($name), array('self', 'parent', 'array', 'callable', 'string', 'bool', 'float', 'int', ''), TRUE)) {
+			return $name;
+		}
 		$name = ltrim($name, '\\');
 		$res = NULL;
 		$lower = strtolower($name);
@@ -151,17 +152,8 @@ class PhpNamespace extends Object
 		if (!$res && Strings::startsWith($lower, strtolower($this->name) . '\\')) {
 			return substr($name, strlen($this->name) + 1);
 		} else {
-			return $res ?: '\\' . $name;
+			return $res ?: ($this->name ? '\\' : '') . $name;
 		}
-	}
-
-
-	/**
-	 * @return ClassType[]
-	 */
-	public function getClasses()
-	{
-		return $this->classes;
 	}
 
 
@@ -196,6 +188,15 @@ class PhpNamespace extends Object
 	public function addTrait($name)
 	{
 		return $this->addClass($name)->setType(ClassType::TYPE_TRAIT);
+	}
+
+
+	/**
+	 * @return ClassType[]
+	 */
+	public function getClasses()
+	{
+		return $this->classes;
 	}
 
 

@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Latte (https://latte.nette.org)
+ * Copyright (c) 2008 David Grudl (https://davidgrudl.com)
  */
 
 namespace Latte;
@@ -10,8 +10,6 @@ namespace Latte;
 
 /**
  * Latte compiler.
- *
- * @author     David Grudl
  */
 class Compiler extends Object
 {
@@ -563,23 +561,26 @@ class Compiler extends Object
 		$inScript = in_array($this->context[0], array(self::CONTENT_JS, self::CONTENT_CSS), TRUE);
 
 		if (empty($this->macros[$name])) {
-			throw new CompileException("Unknown macro {{$name}}" . ($inScript ? ' (in JavaScript or CSS, try to put a space after bracket.)' : ''));
+			$hint = ($t = Helpers::getSuggestion(array_keys($this->macros), $name)) ? ", did you mean {{$t}}?" : '';
+			throw new CompileException("Unknown macro {{$name}}$hint" . ($inScript ? ' (in JavaScript or CSS, try to put a space after bracket or use n:syntax=off)' : ''));
 		}
 
-		if ($this->context[1] === self::CONTENT_URL) {
-			$modifiers = preg_replace('#\|nosafeurl\s?(?=\||\z)#i', '', $modifiers, -1, $found);
-			if (!$found && !preg_match('#\|datastream(?=\s|\||\z)#i', $modifiers)) {
-				$modifiers .= '|safeurl';
+		if (strpbrk($name, '=~%^&_')) {
+			if ($this->context[1] === self::CONTENT_URL) {
+				$modifiers = preg_replace('#\|nosafeurl\s?(?=\||\z)#i', '', $modifiers, -1, $found);
+				if (!$found && !preg_match('#\|datastream(?=\s|\||\z)#i', $modifiers)) {
+					$modifiers .= '|safeurl';
+				}
 			}
-		}
 
-		$modifiers = preg_replace('#\|noescape\s?(?=\||\z)#i', '', $modifiers, -1, $found);
-		if (!$found && strpbrk($name, '=~%^&_')) {
-			$modifiers .= '|escape';
-		}
+			$modifiers = preg_replace('#\|noescape\s?(?=\||\z)#i', '', $modifiers, -1, $found);
+			if (!$found) {
+				$modifiers .= '|escape';
+			}
 
-		if (!$found && $inScript && $name === '=' && preg_match('#["\'] *\z#', $this->tokens[$this->position - 1]->text)) {
-			throw new CompileException("Do not place {$this->tokens[$this->position]->text} inside quotes.");
+			if (!$found && $inScript && $name === '=' && preg_match('#["\'] *\z#', $this->tokens[$this->position - 1]->text)) {
+				throw new CompileException("Do not place {$this->tokens[$this->position]->text} inside quotes.");
+			}
 		}
 
 		foreach (array_reverse($this->macros[$name]) as $macro) {

@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Http;
@@ -28,8 +28,6 @@ use Nette;
  * - basePath:    /en/ (everything before relative URI not including the script name)
  * - baseUrl:     http://user:password@nette.org:8042/en/
  * - relativeUrl: manual.php
- *
- * @author     David Grudl
  *
  * @property   string $scheme
  * @property   string $user
@@ -446,7 +444,7 @@ class Url extends Nette\Object
 	{
 		$this->path = preg_replace_callback(
 			'#[^!$&\'()*+,/:;=@%]+#',
-			function($m) { return rawurlencode($m[0]); },
+			function ($m) { return rawurlencode($m[0]); },
 			self::unescape($this->path, '%/')
 		);
 		$this->host = strtolower($this->host);
@@ -477,7 +475,7 @@ class Url extends Nette\Object
 		if ($reserved !== '') {
 			$s = preg_replace_callback(
 				'#%(' . substr(chunk_split(bin2hex($reserved), 2, '|'), 0, -1) . ')#i',
-				function($m) { return '%25' . strtoupper($m[1]); },
+				function ($m) { return '%25' . strtoupper($m[1]); },
 				$s
 			);
 		}

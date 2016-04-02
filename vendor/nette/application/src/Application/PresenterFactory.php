@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Application;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * Default presenter loader.
- *
- * @author     David Grudl
  */
 class PresenterFactory extends Nette\Object implements IPresenterFactory
 {
@@ -34,11 +32,11 @@ class PresenterFactory extends Nette\Object implements IPresenterFactory
 
 
 	/**
-	 * @param  callable  function(string $class): IPresenter
+	 * @param  callable  function (string $class): IPresenter
 	 */
 	public function __construct($factory = NULL)
 	{
-		$this->factory = $factory ?: function($class) { return new $class; };
+		$this->factory = $factory ?: function ($class) { return new $class; };
 	}
 
 

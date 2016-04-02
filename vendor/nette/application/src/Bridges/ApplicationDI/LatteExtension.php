@@ -1,21 +1,18 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Bridges\ApplicationDI;
 
-use Nette,
-	Latte;
+use Nette;
+use Latte;
 
 
 /**
  * Latte extension for Nette DI.
- *
- * @author     David Grudl
- * @author     Petr Morávek
  */
 class LatteExtension extends Nette\DI\CompilerExtension
 {
@@ -101,10 +98,10 @@ class LatteExtension extends Nette\DI\CompilerExtension
 
 		$container = $this->getContainerBuilder();
 		$container->getDefinition('nette.latte')
-			->addSetup('?->onCompile[] = function($engine) { ' . $macro . '($engine->getCompiler()); }', array('@self'));
+			->addSetup('?->onCompile[] = function ($engine) { ' . $macro . '($engine->getCompiler()); }', array('@self'));
 
 		$container->getDefinition($this->prefix('latteFactory'))
-			->addSetup('?->onCompile[] = function($engine) { ' . $macro . '($engine->getCompiler()); }', array('@self'));
+			->addSetup('?->onCompile[] = function ($engine) { ' . $macro . '($engine->getCompiler()); }', array('@self'));
 	}
 
 }

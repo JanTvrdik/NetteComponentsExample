@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\DI;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * DI container loader.
- *
- * @author     David Grudl
  */
 class ContainerLoader extends Nette\Object
 {
@@ -33,7 +31,7 @@ class ContainerLoader extends Nette\Object
 
 	/**
 	 * @param  mixed
-	 * @param  callable  function(Nette\DI\Compiler $compiler): string|NULL
+	 * @param  callable  function (Nette\DI\Compiler $compiler): string|NULL
 	 * @return string
 	 */
 	public function load($key, $generator)
@@ -61,7 +59,7 @@ class ContainerLoader extends Nette\Object
 	private function loadFile($class, $generator)
 	{
 		$file = "$this->tempDirectory/$class.php";
-		if (!$this->isExpired($file) && (@include $file) !== FALSE) {
+		if (!$this->isExpired($file) && (@include $file) !== FALSE) { // @ file may not exist
 			return;
 		}
 
@@ -95,7 +93,7 @@ class ContainerLoader extends Nette\Object
 	private function isExpired($file)
 	{
 		if ($this->autoRebuild) {
-			$meta = @unserialize(file_get_contents("$file.meta")); // @ - files may not exist
+			$meta = @unserialize(file_get_contents("$file.meta")); // @ - file may not exist
 			$files = $meta ? array_combine($tmp = array_keys($meta), $tmp) : array();
 			return $meta !== @array_map('filemtime', $files); // @ - files may not exist
 		}
@@ -116,7 +114,7 @@ class ContainerLoader extends Nette\Object
 		$files = $files ? array_combine($files, $files) : array(); // workaround for PHP 5.3 array_combine
 		return array(
 			"<?php\n$code",
-			serialize(@array_map('filemtime', $files)) // @ - file may not exist
+			serialize(@array_map('filemtime', $files)), // @ - file may not exist
 		);
 	}
 

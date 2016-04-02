@@ -1,19 +1,15 @@
 <?php
 
 /**
- * This file is part of the Tracy (http://tracy.nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Tracy (https://tracy.nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Tracy;
 
-use Tracy;
-
 
 /**
  * Logger.
- *
- * @author     David Grudl
  */
 class Logger implements ILogger
 {
@@ -47,7 +43,7 @@ class Logger implements ILogger
 
 	/**
 	 * Logs message or exception to file and sends email notification.
-	 * @param  string|\Exception
+	 * @param  string|\Exception|\Throwable
 	 * @param  int   one of constant ILogger::INFO, WARNING, ERROR (sends email), EXCEPTION (sends email), CRITICAL (sends email)
 	 * @return string logged error filename
 	 */
@@ -59,15 +55,17 @@ class Logger implements ILogger
 			throw new \RuntimeException("Directory '$this->directory' is not found or is not directory.");
 		}
 
-		$exceptionFile = $message instanceof \Exception ? $this->getExceptionFile($message) : NULL;
+		$exceptionFile = $message instanceof \Exception || $message instanceof \Throwable
+			? $this->getExceptionFile($message)
+			: NULL;
 		$line = $this->formatLogLine($message, $exceptionFile);
 		$file = $this->directory . '/' . strtolower($priority ?: self::INFO) . '.log';
 
-		if (!@file_put_contents($file, $line . PHP_EOL, FILE_APPEND | LOCK_EX)) {
+		if (!@file_put_contents($file, $line . PHP_EOL, FILE_APPEND | LOCK_EX)) { // @ is escalated to exception
 			throw new \RuntimeException("Unable to write to log file '$file'. Is directory writable?");
 		}
 
-		if ($message instanceof \Exception) {
+		if ($exceptionFile) {
 			$this->logException($message, $exceptionFile);
 		}
 
@@ -80,15 +78,16 @@ class Logger implements ILogger
 
 
 	/**
+	 * @param  string|\Exception|\Throwable
 	 * @return string
 	 */
 	protected function formatMessage($message)
 	{
-		if ($message instanceof \Exception) {
+		if ($message instanceof \Exception || $message instanceof \Throwable) {
 			while ($message) {
-				$tmp[] = ($message instanceof \ErrorException ?
-					'Fatal error: ' . $message->getMessage()
-					: get_class($message) . ': ' . $message->getMessage()
+				$tmp[] = ($message instanceof \ErrorException
+					? Helpers::errorTypeToString($message->getSeverity()) . ': ' . $message->getMessage()
+					: Helpers::getClass($message) . ': ' . $message->getMessage()
 				) . ' in ' . $message->getFile() . ':' . $message->getLine();
 				$message = $message->getPrevious();
 			}
@@ -103,45 +102,48 @@ class Logger implements ILogger
 
 
 	/**
+	 * @param  string|\Exception|\Throwable
 	 * @return string
 	 */
 	protected function formatLogLine($message, $exceptionFile = NULL)
 	{
 		return implode(' ', array(
-			@date('[Y-m-d H-i-s]'),
+			@date('[Y-m-d H-i-s]'), // @ timezone may not be set
 			preg_replace('#\s*\r?\n\s*#', ' ', $this->formatMessage($message)),
 			' @  ' . Helpers::getSource(),
-			$exceptionFile ? ' @@  ' . basename($exceptionFile) : NULL
+			$exceptionFile ? ' @@  ' . basename($exceptionFile) : NULL,
 		));
 	}
 
 
 	/**
+	 * @param  \Exception|\Throwable
 	 * @return string
 	 */
-	protected function getExceptionFile(\Exception $exception)
+	public function getExceptionFile($exception)
 	{
 		$dir = strtr($this->directory . '/', '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
-		$hash = md5(preg_replace('~(Resource id #)\d+~', '$1', $exception));
+		$hash = substr(md5(preg_replace('~(Resource id #)\d+~', '$1', $exception)), 0, 10);
 		foreach (new \DirectoryIterator($this->directory) as $file) {
 			if (strpos($file, $hash)) {
 				return $dir . $file;
 			}
 		}
-		return $dir . 'exception-' . @date('Y-m-d-H-i-s') . "-$hash.html";
+		return $dir . 'exception--' . @date('Y-m-d--H-i') . "--$hash.html"; // @ timezone may not be set
 	}
 
 
 	/**
 	 * Logs exception to the file if file doesn't exist.
+	 * @param  \Exception|\Throwable
 	 * @return string logged error filename
 	 */
-	protected function logException(\Exception $exception, $file = NULL)
+	protected function logException($exception, $file = NULL)
 	{
 		$file = $file ?: $this->getExceptionFile($exception);
-		if ($handle = @fopen($file, 'x')) {
+		if ($handle = @fopen($file, 'x')) { // @ file may already exist
 			ob_start(); // double buffer prevents sending HTTP headers in some PHP
-			ob_start(function($buffer) use ($handle) { fwrite($handle, $buffer); }, 4096);
+			ob_start(function ($buffer) use ($handle) { fwrite($handle, $buffer); }, 4096);
 			$bs = $this->blueScreen ?: new BlueScreen;
 			$bs->render($exception);
 			ob_end_flush();
@@ -153,18 +155,18 @@ class Logger implements ILogger
 
 
 	/**
-	 * @param  string
+	 * @param  string|\Exception|\Throwable
 	 * @return void
 	 */
 	protected function sendEmail($message)
 	{
 		$snooze = is_numeric($this->emailSnooze)
 			? $this->emailSnooze
-			: @strtotime($this->emailSnooze) - time(); // @ - timezone may not be set
+			: @strtotime($this->emailSnooze) - time(); // @ timezone may not be set
 
 		if ($this->email && $this->mailer
-			&& @filemtime($this->directory . '/email-sent') + $snooze < time() // @ - file may not exist
-			&& @file_put_contents($this->directory . '/email-sent', 'sent') // @ - file may not be writable
+			&& @filemtime($this->directory . '/email-sent') + $snooze < time() // @ file may not exist
+			&& @file_put_contents($this->directory . '/email-sent', 'sent') // @ file may not be writable
 		) {
 			call_user_func($this->mailer, $message, implode(', ', (array) $this->email));
 		}
@@ -173,7 +175,7 @@ class Logger implements ILogger
 
 	/**
 	 * Default mailer.
-	 * @param  string
+	 * @param  string|\Exception|\Throwable
 	 * @param  string
 	 * @return void
 	 * @internal
@@ -186,7 +188,7 @@ class Logger implements ILogger
 			array("\n", PHP_EOL),
 			array(
 				'headers' => implode("\n", array(
-					"From: " . ($this->fromEmail ?: "noreply@$host"),
+					'From: ' . ($this->fromEmail ?: "noreply@$host"),
 					'X-Mailer: Tracy',
 					'Content-Type: text/plain; charset=UTF-8',
 					'Content-Transfer-Encoding: 8bit',

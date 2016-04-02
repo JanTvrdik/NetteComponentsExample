@@ -1,24 +1,19 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette;
 
-use Nette,
-	Nette\DI,
-	Tracy;
+use Nette;
+use Nette\DI;
+use Tracy;
 
 
 /**
  * Initial system DI container generator.
- *
- * @author     David Grudl
- *
- * @property   bool $debugMode
- * @property-write $tempDirectory
  */
 class Configurator extends Object
 {
@@ -27,7 +22,7 @@ class Configurator extends Object
 
 	const COOKIE_SECRET = 'nette-debug';
 
-	/** @var callable[]  function(Configurator $sender, DI\Compiler $compiler); Occurs after the compiler is created */
+	/** @var callable[]  function (Configurator $sender, DI\Compiler $compiler); Occurs after the compiler is created */
 	public $onCompile;
 
 	/** @var array */
@@ -35,8 +30,8 @@ class Configurator extends Object
 		'php' => 'Nette\DI\Extensions\PhpExtension',
 		'constants' => 'Nette\DI\Extensions\ConstantsExtension',
 		'extensions' => 'Nette\DI\Extensions\ExtensionsExtension',
-		'decorator' => 'Nette\DI\Extensions\DecoratorExtension',
 		'application' => array('Nette\Bridges\ApplicationDI\ApplicationExtension', array('%debugMode%', array('%appDir%'), '%tempDir%/cache')),
+		'decorator' => 'Nette\DI\Extensions\DecoratorExtension',
 		'cache' => array('Nette\Bridges\CacheDI\CacheExtension', array('%tempDir%')),
 		'database' => array('Nette\Bridges\DatabaseDI\DatabaseExtension', array('%debugMode%')),
 		'di' => array('Nette\DI\Extensions\DIExtension', array('%debugMode%')),
@@ -152,7 +147,7 @@ class Configurator extends Object
 			'container' => array(
 				'class' => NULL,
 				'parent' => NULL,
-			)
+			),
 		);
 	}
 
@@ -199,7 +194,8 @@ class Configurator extends Object
 				$loader->load($file, $this->parameters['environment']);
 				trigger_error("Config file '$file' has sections, call addConfig() with second parameter Configurator::AUTO.", E_USER_WARNING);
 				$section = $this->parameters['environment'];
-			} catch (\Exception $e) {}
+			} catch (\Exception $e) {
+			}
 		}
 		$this->files[] = array($file, $section === self::AUTO ? $this->parameters['environment'] : $section);
 		return $this;
@@ -217,7 +213,7 @@ class Configurator extends Object
 			$this->parameters['debugMode']
 		);
 		$class = $loader->load(
-			array($this->parameters, $this->files),
+			array($this->parameters, $this->files, PHP_VERSION_ID - PHP_RELEASE_VERSION),
 			array($this, 'generateContainer')
 		);
 
@@ -288,7 +284,7 @@ class Configurator extends Object
 	protected function getCacheDirectory()
 	{
 		if (empty($this->parameters['tempDir'])) {
-			throw new Nette\InvalidStateException("Set path to temporary directory using setTempDirectory().");
+			throw new Nette\InvalidStateException('Set path to temporary directory using setTempDirectory().');
 		}
 		$dir = $this->parameters['tempDir'] . '/cache';
 		if (!is_dir($dir)) {
@@ -299,7 +295,7 @@ class Configurator extends Object
 
 
 	/**
-	 * Back compatiblity with < v2.3
+	 * Back compatibility with < v2.3
 	 * @return array
 	 */
 	protected function fixCompatibility($config)

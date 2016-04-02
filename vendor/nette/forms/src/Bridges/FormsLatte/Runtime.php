@@ -1,21 +1,19 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Bridges\FormsLatte;
 
-use Nette,
-	Nette\Utils\Html,
-	Nette\Forms\Form;
+use Nette;
+use Nette\Utils\Html;
+use Nette\Forms\Form;
 
 
 /**
  * Runtime helpers for Latte.
- *
- * @author     David Grudl
  * @internal
  */
 class Runtime extends Nette\Object

@@ -1,25 +1,23 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Database;
 
-use Nette,
-	Tracy;
+use Nette;
+use Tracy;
 
 
 /**
  * Database helpers.
- *
- * @author     David Grudl
  */
 class Helpers
 {
 	/** @var int maximum SQL length */
-	static public $maxLength = 100;
+	public static $maxLength = 100;
 
 	/** @var array */
 	public static $typePatterns = array(
@@ -93,7 +91,7 @@ class Helpers
 
 		// syntax highlight
 		$sql = htmlSpecialChars($sql, ENT_IGNORE, 'UTF-8');
-		$sql = preg_replace_callback("#(/\\*.+?\\*/)|(\\*\\*.+?\\*\\*)|(?<=[\\s,(])($keywords1)(?=[\\s,)])|(?<=[\\s,(=])($keywords2)(?=[\\s,)=])#is", function($matches) {
+		$sql = preg_replace_callback("#(/\\*.+?\\*/)|(\\*\\*.+?\\*\\*)|(?<=[\\s,(])($keywords1)(?=[\\s,)])|(?<=[\\s,(=])($keywords2)(?=[\\s,)=])#is", function ($matches) {
 			if (!empty($matches[1])) { // comment
 				return '<em style="color:gray">' . $matches[1] . '</em>';
 
@@ -109,7 +107,7 @@ class Helpers
 		}, $sql);
 
 		// parameters
-		$sql = preg_replace_callback('#\?#', function() use ($params, $connection) {
+		$sql = preg_replace_callback('#\?#', function () use ($params, $connection) {
 			static $i = 0;
 			if (!isset($params[$i])) {
 				return '?';
@@ -186,9 +184,9 @@ class Helpers
 	 */
 	public static function loadFromFile(Connection $connection, $file)
 	{
-		@set_time_limit(0); // intentionally @
+		@set_time_limit(0); // @ function may be disabled
 
-		$handle = @fopen($file, 'r'); // intentionally @
+		$handle = @fopen($file, 'r'); // @ is escalated to exception
 		if (!$handle) {
 			throw new Nette\FileNotFoundException("Cannot open file '$file'.");
 		}
@@ -196,6 +194,7 @@ class Helpers
 		$count = 0;
 		$delimiter = ';';
 		$sql = '';
+		$pdo = $connection->getPdo(); // native query without logging
 		while (!feof($handle)) {
 			$s = rtrim(fgets($handle));
 			if (!strncasecmp($s, 'DELIMITER ', 10)) {
@@ -203,7 +202,7 @@ class Helpers
 
 			} elseif (substr($s, -strlen($delimiter)) === $delimiter) {
 				$sql .= substr($s, 0, -strlen($delimiter));
-				$connection->query($sql); // native query without logging
+				$pdo->exec($sql);
 				$sql = '';
 				$count++;
 
@@ -212,7 +211,7 @@ class Helpers
 			}
 		}
 		if (trim($sql) !== '') {
-			$connection->query($sql);
+			$pdo->exec($sql);
 			$count++;
 		}
 		fclose($handle);

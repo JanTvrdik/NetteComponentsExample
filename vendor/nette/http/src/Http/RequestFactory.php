@@ -1,20 +1,18 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Http;
 
-use Nette,
-	Nette\Utils\Strings;
+use Nette;
+use Nette\Utils\Strings;
 
 
 /**
  * Current HTTP request factory.
- *
- * @author     David Grudl
  */
 class RequestFactory extends Nette\Object
 {
@@ -221,7 +219,7 @@ class RequestFactory extends Nette\Object
 		}
 
 		// raw body
-		$rawBodyCallback = function() {
+		$rawBodyCallback = function () {
 			static $rawBody;
 
 			if (PHP_VERSION_ID >= 50600) {

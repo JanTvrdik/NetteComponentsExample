@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\DI;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * PHP reflection helpers.
- *
- * @author     David Grudl
  * @internal
  */
 class PhpReflection
@@ -60,18 +58,53 @@ class PhpReflection
 
 
 	/**
-	 * @return string
+	 * @return string|NULL
 	 */
-	public static function getPropertyType(\ReflectionParameter $prop)
+	public static function getParameterType(\ReflectionParameter $param)
 	{
-		try {
-			return ($ref = $prop->getClass()) ? $ref->getName() : NULL;
-		} catch (\ReflectionException $e) {
-			if (preg_match('#Class (.+) does not exist#', $e->getMessage(), $m)) {
-				return $m[1];
+		if (PHP_VERSION_ID >= 70000) {
+			return $param->hasType() ? (string) $param->getType() : NULL;
+		} elseif ($param->isArray()) {
+			return 'array';
+		} elseif (PHP_VERSION_ID >= 50400 && $param->isCallable()) {
+			return 'callable';
+		} else {
+			try {
+				return ($ref = $param->getClass()) ? $ref->getName() : NULL;
+			} catch (\ReflectionException $e) {
+				if (preg_match('#Class (.+) does not exist#', $e->getMessage(), $m)) {
+					return $m[1];
+				}
+				throw $e;
 			}
-			throw $e;
 		}
+	}
+
+
+	/**
+	 * @return string|NULL
+	 */
+	public static function getReturnType(\ReflectionFunctionAbstract $func)
+	{
+		if (PHP_VERSION_ID >= 70000 && $func->hasReturnType()) {
+			return (string) $func->getReturnType();
+		}
+		$type = preg_replace('#[|\s].*#', '', (string) self::parseAnnotation($func, 'return'));
+		if ($type) {
+			return $func instanceof \ReflectionMethod
+				? self::expandClassName($type, $func->getDeclaringClass())
+				: ltrim($type, '\\');
+		}
+	}
+
+
+	/**
+	 * @param  string
+	 * @return bool
+	 */
+	public static function isBuiltinType($type)
+	{
+		return in_array(strtolower($type), array('string', 'int', 'float', 'bool', 'array', 'callable'), TRUE);
 	}
 
 
@@ -83,10 +116,14 @@ class PhpReflection
 	 */
 	public static function expandClassName($name, \ReflectionClass $rc)
 	{
+		$lower = strtolower($name);
 		if (empty($name)) {
 			throw new Nette\InvalidArgumentException('Class name must not be empty.');
 
-		} elseif ($name === 'self') {
+		} elseif (self::isBuiltinType($lower)) {
+			return $lower;
+
+		} elseif ($lower === 'self' || $lower === 'static') {
 			return $rc->getName();
 
 		} elseif ($name[0] === '\\') { // fully qualified name

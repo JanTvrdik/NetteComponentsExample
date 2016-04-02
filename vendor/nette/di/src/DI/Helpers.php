@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\DI;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * The DI helpers.
- *
- * @author     David Grudl
  * @internal
  */
 class Helpers
@@ -23,7 +21,7 @@ class Helpers
 	 * Expands %placeholders%.
 	 * @param  mixed
 	 * @param  array
-	 * @param  bool
+	 * @param  bool|array
 	 * @return mixed
 	 * @throws Nette\InvalidArgumentException
 	 */
@@ -100,12 +98,16 @@ class Helpers
 				unset($arguments[$parameter->getName()]);
 				$optCount = 0;
 
-			} elseif ($class = PhpReflection::getPropertyType($parameter)) { // has object type hint
+			} elseif (($class = PhpReflection::getParameterType($parameter)) && !PhpReflection::isBuiltinType($class)) {
 				$res[$num] = $container->getByType($class, FALSE);
 				if ($res[$num] === NULL) {
 					if ($parameter->allowsNull()) {
 						$optCount++;
 					} elseif (class_exists($class) || interface_exists($class)) {
+						$rc = new \ReflectionClass($class);
+						if ($class !== ($hint = $rc->getName())) {
+							throw new ServiceCreationException("Service of type {$class} needed by $methodName not found, did you mean $hint?");
+						}
 						throw new ServiceCreationException("Service of type {$class} needed by $methodName not found. Did you register it in configuration file?");
 					} else {
 						throw new ServiceCreationException("Class {$class} needed by $methodName not found. Check type hint and 'use' statements.");
@@ -124,7 +126,7 @@ class Helpers
 				$optCount++;
 
 			} else {
-				throw new ServiceCreationException("Parameter \${$parameter->getName()} in $methodName has no type hint, so its value must be specified.");
+				throw new ServiceCreationException("Parameter \${$parameter->getName()} in $methodName has no class type hint or default value, so its value must be specified.");
 			}
 		}
 

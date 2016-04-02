@@ -1,5 +1,5 @@
 /**
- * This file is part of the Tracy (http://tracy.nette.org)
+ * This file is part of the Tracy (https://tracy.nette.org)
  */
 
 (function() {
@@ -69,7 +69,7 @@
 
 	var build = function(data, repository, collapsed, parentIds) {
 		var type = data === null ? 'null' : typeof data,
-			collapseCount = typeof collapsed === 'undefined' ? COLLAPSE_COUNT : COLLAPSE_COUNT_TOP;
+			collapseCount = typeof collapsed === 'undefined' ? COLLAPSE_COUNT_TOP : COLLAPSE_COUNT;
 
 		if (type === 'null' || type === 'string' || type === 'number' || type === 'boolean') {
 			data = type === 'string' ? '"' + data + '"' : (data + '').toUpperCase();
@@ -92,6 +92,11 @@
 				repository,
 				parentIds
 			);
+
+		} else if (type === 'object' && data.number) {
+			return createEl(null, null, [
+				createEl('span', {'class': 'tracy-dump-number'}, [data.number + '\n'])
+			]);
 
 		} else if (type === 'object' && data.type) {
 			return createEl(null, null, [

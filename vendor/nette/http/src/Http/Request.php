@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Http;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * HttpRequest provides access scheme for request sent via HTTP.
- *
- * @author     David Grudl
  *
  * @property-read UrlScript $url
  * @property-read array $query
@@ -323,7 +321,8 @@ class Request extends Nette\Object implements IRequest
 		foreach ($matches[1] as $key => $value) {
 			$q = $matches[2][$key] === '' ? 1.0 : (float) $matches[2][$key];
 			if ($q > $max) {
-				$max = $q; $lang = $value;
+				$max = $q;
+				$lang = $value;
 			}
 		}
 

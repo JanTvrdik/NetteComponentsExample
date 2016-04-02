@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Latte (https://latte.nette.org)
+ * Copyright (c) 2008 David Grudl (https://davidgrudl.com)
  */
 
 namespace Latte\Loaders;
@@ -12,8 +12,6 @@ use Latte;
 
 /**
  * Template loader.
- *
- * @author     David Grudl
  */
 class FileLoader extends Latte\Object implements Latte\ILoader
 {
@@ -28,7 +26,10 @@ class FileLoader extends Latte\Object implements Latte\ILoader
 			throw new \RuntimeException("Missing template file '$file'.");
 
 		} elseif ($this->isExpired($file, time())) {
-			touch($file);
+			if (@touch($file) === FALSE) {
+				$tmp = error_get_last();
+				trigger_error("File's modification time is in the future. Cannot update it: $tmp[message]", E_USER_WARNING);
+			}
 		}
 		return file_get_contents($file);
 	}

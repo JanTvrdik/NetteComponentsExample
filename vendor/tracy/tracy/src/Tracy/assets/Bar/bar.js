@@ -1,5 +1,5 @@
 /**
- * This file is part of the Tracy (http://tracy.nette.org)
+ * This file is part of the Tracy (https://tracy.nette.org)
  */
 
 (function(){
@@ -338,6 +338,9 @@
 		options = options || {};
 
 		var onmousemove = function(e) {
+			if (e.buttons === 0) {
+				return onmouseup(e);
+			}
 			if (!started) {
 				if (options.draggedClass) {
 					elem.classList.add(options.draggedClass);

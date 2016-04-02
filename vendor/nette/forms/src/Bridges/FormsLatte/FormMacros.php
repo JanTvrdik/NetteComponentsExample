@@ -1,19 +1,19 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Bridges\FormsLatte;
 
-use Nette,
-	Latte,
-	Latte\MacroNode,
-	Latte\PhpWriter,
-	Latte\CompileException,
-	Latte\Macros\MacroSet,
-	Nette\Forms\Form;
+use Nette;
+use Latte;
+use Latte\MacroNode;
+use Latte\PhpWriter;
+use Latte\CompileException;
+use Latte\Macros\MacroSet;
+use Nette\Forms\Form;
 
 
 /**
@@ -24,8 +24,6 @@ use Nette,
  * - {label name /} or {label name}... {/label}
  * - {inputError name}
  * - {formContainer name} ... {/formContainer}
- *
- * @author     David Grudl
  */
 class FormMacros extends MacroSet
 {
@@ -50,6 +48,9 @@ class FormMacros extends MacroSet
 	 */
 	public function macroForm(MacroNode $node, PhpWriter $writer)
 	{
+		if ($node->modifiers) {
+			trigger_error("Modifiers are not allowed in {{$node->name}}", E_USER_WARNING);
+		}
 		if ($node->prefix) {
 			throw new CompileException('Did you mean <form n:name=...> ?');
 		}
@@ -71,6 +72,9 @@ class FormMacros extends MacroSet
 	 */
 	public function macroFormContainer(MacroNode $node, PhpWriter $writer)
 	{
+		if ($node->modifiers) {
+			trigger_error("Modifiers are not allowed in {{$node->name}}", E_USER_WARNING);
+		}
 		$name = $node->tokenizer->fetchWord();
 		if ($name === FALSE) {
 			throw new CompileException("Missing name in {{$node->name}}.");
@@ -87,6 +91,9 @@ class FormMacros extends MacroSet
 	 */
 	public function macroLabel(MacroNode $node, PhpWriter $writer)
 	{
+		if ($node->modifiers) {
+			trigger_error("Modifiers are not allowed in {{$node->name}}", E_USER_WARNING);
+		}
 		$words = $node->tokenizer->fetchWords();
 		if (!$words) {
 			throw new CompileException("Missing name in {{$node->name}}.");
@@ -119,6 +126,9 @@ class FormMacros extends MacroSet
 	 */
 	public function macroInput(MacroNode $node, PhpWriter $writer)
 	{
+		if ($node->modifiers) {
+			trigger_error("Modifiers are not allowed in {{$node->name}}", E_USER_WARNING);
+		}
 		$words = $node->tokenizer->fetchWords();
 		if (!$words) {
 			throw new CompileException("Missing name in {{$node->name}}.");
@@ -198,7 +208,7 @@ class FormMacros extends MacroSet
 			$node->content = $parts[1] . $parts[2] . '<?php echo Nette\Bridges\FormsLatte\Runtime::renderFormEnd($_form, FALSE) ?>' . $parts[3];
 		} elseif ($tagName === 'label') {
 			if ($node->htmlNode->isEmpty) {
-				$node->content = $parts[1] . '<?php echo $_input->getLabel()->getHtml() ?>' . $parts[3];
+				$node->content = $parts[1] . "<?php echo \$_input->{method_exists(\$_input, 'getLabelPart')?'getLabelPart':'getLabel'}()->getHtml() ?>" . $parts[3];
 			}
 		} elseif ($tagName === 'button') {
 			if ($node->htmlNode->isEmpty) {
@@ -215,6 +225,9 @@ class FormMacros extends MacroSet
 	 */
 	public function macroInputError(MacroNode $node, PhpWriter $writer)
 	{
+		if ($node->modifiers) {
+			trigger_error("Modifiers are not allowed in {{$node->name}}", E_USER_WARNING);
+		}
 		$name = $node->tokenizer->fetchWord();
 		if (!$name) {
 			return $writer->write('echo %escape($_input->getError())');

@@ -1,19 +1,15 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Neon;
 
-use Nette;
-
 
 /**
  * Simple generator for Nette Object Notation.
- *
- * @author     David Grudl
  */
 class Encoder
 {
@@ -32,12 +28,16 @@ class Encoder
 			return $var->format('Y-m-d H:i:s O');
 
 		} elseif ($var instanceof Entity) {
+			if ($var->value === Neon::CHAIN) {
+				return implode('', array_map(array($this, 'encode'), $var->attributes));
+			}
 			return $this->encode($var->value) . '('
 				. (is_array($var->attributes) ? substr($this->encode($var->attributes), 1, -1) : '') . ')';
 		}
 
 		if (is_object($var)) {
-			$obj = $var; $var = array();
+			$obj = $var;
+			$var = array();
 			foreach ($obj as $k => $v) {
 				$var[$k] = $v;
 			}

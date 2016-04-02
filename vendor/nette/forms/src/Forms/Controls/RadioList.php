@@ -1,20 +1,18 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Forms\Controls;
 
-use Nette,
-	Nette\Utils\Html;
+use Nette;
+use Nette\Utils\Html;
 
 
 /**
  * Set of radio button controls.
- *
- * @author     David Grudl
  *
  * @property-read Html $separatorPrototype
  * @property-read Html $containerPrototype
@@ -46,46 +44,6 @@ class RadioList extends ChoiceControl
 		$this->container = Html::el();
 		$this->separator = Html::el('br');
 		$this->itemLabel = Html::el();
-	}
-
-
-	/**
-	 * Returns selected radio value.
-	 * @return mixed
-	 */
-	public function getValue()
-	{
-		return parent::getValue();
-	}
-
-
-	/**
-	 * Returns separator HTML element template.
-	 * @return Html
-	 */
-	public function getSeparatorPrototype()
-	{
-		return $this->separator;
-	}
-
-
-	/**
-	 * Returns container HTML element template.
-	 * @return Html
-	 */
-	public function getContainerPrototype()
-	{
-		return $this->container;
-	}
-
-
-	/**
-	 * Returns item label HTML element template.
-	 * @return Html
-	 */
-	public function getItemLabelPrototype()
-	{
-		return $this->itemLabel;
 	}
 
 
@@ -149,9 +107,41 @@ class RadioList extends ChoiceControl
 	/**
 	 * @return Html
 	 */
-	public function getLabelPart($key)
+	public function getLabelPart($key = NULL)
 	{
-		return parent::getLabel($this->items[$key])->for($this->getHtmlId() . '-' . $key);
+		return func_num_args()
+			? parent::getLabel($this->items[$key])->for($this->getHtmlId() . '-' . $key)
+			: $this->getLabel();
+	}
+
+
+	/**
+	 * Returns separator HTML element template.
+	 * @return Html
+	 */
+	public function getSeparatorPrototype()
+	{
+		return $this->separator;
+	}
+
+
+	/**
+	 * Returns container HTML element template.
+	 * @return Html
+	 */
+	public function getContainerPrototype()
+	{
+		return $this->container;
+	}
+
+
+	/**
+	 * Returns item label HTML element template.
+	 * @return Html
+	 */
+	public function getItemLabelPrototype()
+	{
+		return $this->itemLabel;
 	}
 
 }

@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Latte (https://latte.nette.org)
+ * Copyright (c) 2008 David Grudl (https://davidgrudl.com)
  */
 
 namespace Latte;
@@ -10,12 +10,10 @@ namespace Latte;
 
 /**
  * Templating engine Latte.
- *
- * @author     David Grudl
  */
 class Engine extends Object
 {
-	const VERSION = '2.3.2';
+	const VERSION = '2.3.10';
 
 	/** Content types */
 	const CONTENT_HTML = 'html',
@@ -89,7 +87,11 @@ class Engine extends Object
 	{
 		$class = $this->getTemplateClass($name);
 		if (!class_exists($class, FALSE)) {
-			$this->loadCacheFile($name);
+			if ($this->tempDirectory) {
+				$this->loadTemplateFromCache($name);
+			} else {
+				$this->loadTemplate($name);
+			}
 		}
 
 		$template = new $class($params, $this, $name);
@@ -106,6 +108,9 @@ class Engine extends Object
 		ob_start();
 		try {
 			$this->render($name, $params);
+		} catch (\Throwable $e) {
+			ob_end_clean();
+			throw $e;
 		} catch (\Exception $e) {
 			ob_end_clean();
 			throw $e;
@@ -151,15 +156,29 @@ class Engine extends Object
 
 
 	/**
+	 * Compiles template to cache.
+	 * @param  string
 	 * @return void
+	 * @throws \LogicException
 	 */
-	private function loadCacheFile($name)
+	public function warmupCache($name)
 	{
 		if (!$this->tempDirectory) {
-			eval('?>' . $this->compile($name));
-			return;
+			throw new \LogicException('Path to temporary directory is not set.');
 		}
 
+		$class = $this->getTemplateClass($name);
+		if (!class_exists($class, FALSE)) {
+			$this->loadTemplateFromCache($name);
+		}
+	}
+
+
+	/**
+	 * @return void
+	 */
+	private function loadTemplateFromCache($name)
+	{
 		$file = $this->getCacheFile($name);
 
 		if (!$this->isExpired($file, $name) && (@include $file) !== FALSE) { // @ - file may not exist
@@ -176,18 +195,37 @@ class Engine extends Object
 		}
 
 		if (!is_file($file) || $this->isExpired($file, $name)) {
-			$code = $this->compile($name);
+			$code = $this->loadTemplate($name);
 			if (file_put_contents("$file.tmp", $code) !== strlen($code) || !rename("$file.tmp", $file)) {
 				@unlink("$file.tmp"); // @ - file may not exist
 				throw new \RuntimeException("Unable to create '$file'.");
 			}
-		}
 
-		if ((include $file) === FALSE) {
+		} elseif ((include $file) === FALSE) {
 			throw new \RuntimeException("Unable to load '$file'.");
 		}
 
 		flock($handle, LOCK_UN);
+	}
+
+
+	/**
+	 * @return string
+	 */
+	private function loadTemplate($name)
+	{
+		$code = $this->compile($name);
+		try {
+			if (@eval('?>' . $code) === FALSE) { // @ is escalated to exception
+				$error = error_get_last();
+				$e = new CompileException('Error in template: ' . $error['message']);
+				throw $e->setSource($code, $error['line'], $name . ' (compiled)');
+			}
+		} catch (\ParseError $e) {
+			$compileException = new CompileException('Error in template: ' . $e->getMessage(), 0, $e);
+			throw $compileException->setSource($code, $e->getLine(), $name . ' (compiled)');
+		}
+		return $code;
 	}
 
 
@@ -271,7 +309,8 @@ class Engine extends Object
 					return call_user_func_array(Helpers::checkCallback($this->filters[$lname]), $args);
 				}
 			}
-			throw new \LogicException("Filter '$name' is not defined.");
+			$hint = ($t = Helpers::getSuggestion(array_keys($this->filters), $name)) ? ", did you mean '$t'?" : '.';
+			throw new \LogicException("Filter '$name' is not defined$hint");
 		}
 		return call_user_func_array(Helpers::checkCallback($this->filters[$lname]), $args);
 	}

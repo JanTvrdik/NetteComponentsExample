@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Application;
@@ -37,7 +37,7 @@ class LinkGenerator extends Nette\Object
 	 * Generates URL to presenter.
 	 * @param  string   destination in format "[[[module:]presenter:]action] [#fragment]"
 	 * @return string
-	 * @throws InvalidLinkException
+	 * @throws UI\InvalidLinkException
 	 */
 	public function link($dest, array $params = array())
 	{
@@ -56,8 +56,8 @@ class LinkGenerator extends Nette\Object
 			if ($action === '') {
 				$action = UI\Presenter::DEFAULT_ACTION;
 			}
-			if ($params && (method_exists($class, $method = $class::formatActionMethod($action))
-				|| method_exists($class, $method = $class::formatRenderMethod($action)))
+			if (method_exists($class, $method = $class::formatActionMethod($action))
+				|| method_exists($class, $method = $class::formatRenderMethod($action))
 			) {
 				UI\Presenter::argsToParams($class, $method, $params);
 			}

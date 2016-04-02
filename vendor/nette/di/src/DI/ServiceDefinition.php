@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\DI;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * Definition used by ContainerBuilder.
- *
- * @author     David Grudl
  */
 class ServiceDefinition extends Nette\Object
 {
@@ -59,7 +57,7 @@ class ServiceDefinition extends Nette\Object
 
 
 	/**
-	 * @return string
+	 * @return string|NULL
 	 */
 	public function getClass()
 	{
@@ -86,6 +84,9 @@ class ServiceDefinition extends Nette\Object
 	}
 
 
+	/**
+	 * @return string|array|ServiceDefinition|NULL
+	 */
 	public function getEntity()
 	{
 		return $this->factory ? $this->factory->getEntity() : NULL;
@@ -249,7 +250,7 @@ class ServiceDefinition extends Nette\Object
 
 
 	/**
-	 * @return string
+	 * @return string|NULL
 	 */
 	public function getImplement()
 	{
@@ -272,7 +273,7 @@ class ServiceDefinition extends Nette\Object
 
 
 	/**
-	 * @return string
+	 * @return string|NULL
 	 */
 	public function getImplementType()
 	{
@@ -304,7 +305,7 @@ class ServiceDefinition extends Nette\Object
 	}
 
 
-	/** @return self */
+	/** @return bool|NULL */
 	public function getInject()
 	{
 		//trigger_error(__METHOD__ . '() is deprecated.', E_USER_DEPRECATED);

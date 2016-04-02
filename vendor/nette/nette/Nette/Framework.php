@@ -1,13 +1,11 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette;
-
-use Nette;
 
 
 /**
@@ -17,8 +15,8 @@ class Framework
 {
 
 	const NAME = 'Nette Framework',
-		VERSION = '2.3.2',
-		VERSION_ID = 20302,
-		REVISION = 'released on 2015-05-05';
+		VERSION = '2.3.9',
+		VERSION_ID = 20309,
+		REVISION = 'released on 2016-02-22';
 
 }

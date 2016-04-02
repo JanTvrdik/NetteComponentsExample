@@ -1,19 +1,15 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Http;
 
-use Nette;
-
 
 /**
  * IHttpResponse interface.
- *
- * @author     David Grudl
  */
 interface IResponse
 {
@@ -41,7 +37,7 @@ interface IResponse
 		S303_POST_GET = 303,
 		S304_NOT_MODIFIED = 304,
 		S305_USE_PROXY = 305,
-		S307_TEMPORARY_REDIRECT= 307,
+		S307_TEMPORARY_REDIRECT = 307,
 		S400_BAD_REQUEST = 400,
 		S401_UNAUTHORIZED = 401,
 		S402_PAYMENT_REQUIRED = 402,

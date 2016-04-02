@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Database\Drivers;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * Supplemental Oracle database driver.
- *
- * @author     David Grudl
  */
 class OciDriver extends Nette\Object implements Nette\Database\ISupplementalDriver
 {
@@ -103,13 +101,16 @@ class OciDriver extends Nette\Object implements Nette\Database\ISupplementalDriv
 	 */
 	public function applyLimit(& $sql, $limit, $offset)
 	{
-		if ($offset > 0) {
+		if ($limit < 0 || $offset < 0) {
+			throw new Nette\InvalidArgumentException('Negative offset or limit.');
+
+		} elseif ($offset) {
 			// see http://www.oracle.com/technology/oramag/oracle/06-sep/o56asktom.html
 			$sql = 'SELECT * FROM (SELECT t.*, ROWNUM AS "__rnum" FROM (' . $sql . ') t '
-				. ($limit >= 0 ? 'WHERE ROWNUM <= ' . ((int) $offset + (int) $limit) : '')
+				. ($limit !== NULL ? 'WHERE ROWNUM <= ' . ((int) $offset + (int) $limit) : '')
 				. ') WHERE "__rnum" > '. (int) $offset;
 
-		} elseif ($limit >= 0) {
+		} elseif ($limit !== NULL) {
 			$sql = 'SELECT * FROM (' . $sql . ') WHERE ROWNUM <= ' . (int) $limit;
 		}
 	}

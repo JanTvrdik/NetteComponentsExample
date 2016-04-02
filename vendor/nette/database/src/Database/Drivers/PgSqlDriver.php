@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Database\Drivers;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * Supplemental PostgreSQL database driver.
- *
- * @author     David Grudl
  */
 class PgSqlDriver extends Nette\Object implements Nette\Database\ISupplementalDriver
 {
@@ -108,10 +106,13 @@ class PgSqlDriver extends Nette\Object implements Nette\Database\ISupplementalDr
 	 */
 	public function applyLimit(& $sql, $limit, $offset)
 	{
-		if ($limit >= 0) {
+		if ($limit < 0 || $offset < 0) {
+			throw new Nette\InvalidArgumentException('Negative offset or limit.');
+		}
+		if ($limit !== NULL) {
 			$sql .= ' LIMIT ' . (int) $limit;
 		}
-		if ($offset > 0) {
+		if ($offset) {
 			$sql .= ' OFFSET ' . (int) $offset;
 		}
 	}

@@ -7,8 +7,6 @@
 
 namespace Nette\Utils;
 
-use Nette;
-
 
 /**
  * Provides atomicity and isolation for thread safe file manipulation using stream nette.safe://
@@ -20,8 +18,6 @@ use Nette;
  *
  * unlink('nette.safe://myfile.txt');
  * </code>
- *
- * @author     David Grudl
  * @internal
  */
 class SafeStream

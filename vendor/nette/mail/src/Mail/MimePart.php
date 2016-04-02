@@ -1,24 +1,19 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Mail;
 
-use Nette,
-	Nette\Utils\Strings;
+use Nette;
+use Nette\Utils\Strings;
 
 
 /**
  * MIME message part.
  *
- * @author     David Grudl
- *
- * @property-read array $headers
- * @property-write $contentType
- * @property   string $encoding
  * @property   mixed $body
  */
 class MimePart extends Nette\Object

@@ -1,21 +1,19 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Forms;
 
-use Nette,
-	Nette\Utils\Strings,
-	Nette\Utils\Validators;
+use Nette;
+use Nette\Utils\Strings;
+use Nette\Utils\Validators;
 
 
 /**
  * Common validators.
- *
- * @author     David Grudl
  */
 class Validator extends Nette\Object
 {
@@ -62,7 +60,7 @@ class Validator extends Nette\Object
 			$message = $translator->translate($message, is_int($rule->arg) ? $rule->arg : NULL);
 		}
 
-		$message = preg_replace_callback('#%(name|label|value|\d+\$[ds]|[ds])#', function($m) use ($rule, $withValue) {
+		$message = preg_replace_callback('#%(name|label|value|\d+\$[ds]|[ds])#', function ($m) use ($rule, $withValue) {
 			static $i = -1;
 			switch ($m[1]) {
 				case 'name': return $rule->control->getName();
@@ -247,7 +245,7 @@ class Validator extends Nette\Object
 	 */
 	public static function validatePattern(IControl $control, $pattern)
 	{
-		return (bool) Strings::match($control->getValue(), "\x01^($pattern)\\z\x01u");
+		return (bool) Strings::match($control->getValue(), "\x01^(?:$pattern)\\z\x01u");
 	}
 
 

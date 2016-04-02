@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\DI\Extensions;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * DI extension.
- *
- * @author     David Grudl
  */
 class DIExtension extends Nette\DI\CompilerExtension
 {
@@ -53,7 +51,7 @@ class DIExtension extends Nette\DI\CompilerExtension
 		if ($this->debugMode && $this->config['debugger']) {
 			Nette\Bridges\DITracy\ContainerPanel::$compilationTime = $this->time;
 			$initialize->addBody($container->formatPhp('?;', array(
-				new Nette\DI\Statement('@Tracy\Bar::addPanel', array(new Nette\DI\Statement('Nette\Bridges\DITracy\ContainerPanel')))
+				new Nette\DI\Statement('@Tracy\Bar::addPanel', array(new Nette\DI\Statement('Nette\Bridges\DITracy\ContainerPanel'))),
 			)));
 		}
 

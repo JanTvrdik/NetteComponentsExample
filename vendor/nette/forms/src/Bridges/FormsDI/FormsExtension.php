@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Bridges\FormsDI;
@@ -12,14 +12,11 @@ use Nette;
 
 /**
  * Forms extension for Nette DI.
- *
- * @author David Grudl
- * @author Miroslav Paulík
  */
 class FormsExtension extends Nette\DI\CompilerExtension
 {
 	public $defaults = array(
-		'messages' => array()
+		'messages' => array(),
 	);
 
 

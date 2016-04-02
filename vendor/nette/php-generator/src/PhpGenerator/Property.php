@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\PhpGenerator;
@@ -12,13 +12,11 @@ use Nette;
 
 /**
  * Class property description.
- *
- * @author     David Grudl
  */
 class Property extends Nette\Object
 {
 	/** @var string */
-	private $name;
+	private $name = '';
 
 	/** @var mixed */
 	public $value;
@@ -29,7 +27,7 @@ class Property extends Nette\Object
 	/** @var string  public|protected|private */
 	private $visibility = 'public';
 
-	/** @var array of string */
+	/** @var string[] */
 	private $documents = array();
 
 
@@ -38,14 +36,22 @@ class Property extends Nette\Object
 	 */
 	public static function from(\ReflectionProperty $from)
 	{
-		$prop = new static;
-		$prop->name = $from->getName();
+		$prop = new static($from->getName());
 		$defaults = $from->getDeclaringClass()->getDefaultProperties();
 		$prop->value = isset($defaults[$prop->name]) ? $defaults[$prop->name] : NULL;
 		$prop->static = $from->isStatic();
 		$prop->visibility = $from->isPrivate() ? 'private' : ($from->isProtected() ? 'protected' : 'public');
-		$prop->documents = preg_replace('#^\s*\* ?#m', '', trim($from->getDocComment(), "/* \r\n\t"));
+		$prop->documents = $from->getDocComment() ? array(preg_replace('#^\s*\* ?#m', '', trim($from->getDocComment(), "/* \r\n\t"))) : array();
 		return $prop;
+	}
+
+
+	/**
+	 * @param  string  without $
+	 */
+	public function __construct($name = '')
+	{
+		$this->setName($name);
 	}
 
 

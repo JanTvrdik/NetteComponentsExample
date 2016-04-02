@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Bridges\ApplicationDI;
@@ -12,13 +12,11 @@ use Nette;
 
 /**
  * Routing extension for Nette DI.
- *
- * @author     David Grudl
  */
 class RoutingExtension extends Nette\DI\CompilerExtension
 {
 	public $defaults = array(
-		'debugger' => TRUE,
+		'debugger' => NULL,
 		'routes' => array(), // of [mask => action]
 		'cache' => FALSE,
 	);
@@ -29,6 +27,7 @@ class RoutingExtension extends Nette\DI\CompilerExtension
 
 	public function __construct($debugMode = FALSE)
 	{
+		$this->defaults['debugger'] = interface_exists('Tracy\IBarPanel');
 		$this->debugMode = $debugMode;
 	}
 
@@ -58,7 +57,7 @@ class RoutingExtension extends Nette\DI\CompilerExtension
 
 		if ($this->debugMode && $this->config['debugger'] && $application = $container->getByType('Nette\Application\Application')) {
 			$container->getDefinition($application)->addSetup('@Tracy\Bar::addPanel', array(
-				new Nette\DI\Statement('Nette\Bridges\ApplicationTracy\RoutingPanel')
+				new Nette\DI\Statement('Nette\Bridges\ApplicationTracy\RoutingPanel'),
 			));
 		}
 	}
@@ -70,6 +69,8 @@ class RoutingExtension extends Nette\DI\CompilerExtension
 			$method = $class->getMethod(Nette\DI\Container::getMethodName($this->prefix('router')));
 			try {
 				$router = serialize(eval($method->getBody()));
+			} catch (\Throwable $e) {
+				throw new Nette\DI\ServiceCreationException('Unable to cache router due to error: ' . $e->getMessage(), 0, $e);
 			} catch (\Exception $e) {
 				throw new Nette\DI\ServiceCreationException('Unable to cache router due to error: ' . $e->getMessage(), 0, $e);
 			}

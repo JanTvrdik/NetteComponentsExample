@@ -1,21 +1,19 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace NetteModule;
 
-use Nette,
-	Nette\Application,
-	Tracy\ILogger;
+use Nette;
+use Nette\Application;
+use Tracy\ILogger;
 
 
 /**
  * Default Error Presenter.
- *
- * @author     David Grudl
  */
 class ErrorPresenter extends Nette\Object implements Application\IPresenter
 {
@@ -34,7 +32,7 @@ class ErrorPresenter extends Nette\Object implements Application\IPresenter
 	 */
 	public function run(Application\Request $request)
 	{
-		$e = $request->parameters['exception'];
+		$e = $request->getParameter('exception');
 		if ($e instanceof Application\BadRequestException) {
 			$code = $e->getCode();
 		} else {
@@ -43,9 +41,9 @@ class ErrorPresenter extends Nette\Object implements Application\IPresenter
 				$this->logger->log($e, ILogger::EXCEPTION);
 			}
 		}
-		ob_start();
-		require __DIR__ . '/templates/error.phtml';
-		return new Application\Responses\TextResponse(ob_get_clean());
+		return new Application\Responses\CallbackResponse(function () use ($code) {
+			require __DIR__ . '/templates/error.phtml';
+		});
 	}
 
 }

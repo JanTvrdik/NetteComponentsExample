@@ -1,20 +1,18 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Forms\Controls;
 
-use Nette,
-	Nette\Utils\Html;
+use Nette;
+use Nette\Utils\Html;
 
 
 /**
  * Set of checkboxes.
- *
- * @author     David Grudl
  *
  * @property-read Html $separatorPrototype
  */
@@ -96,9 +94,11 @@ class CheckboxList extends MultiChoiceControl
 	/**
 	 * @return Html
 	 */
-	public function getLabelPart($key)
+	public function getLabelPart($key = NULL)
 	{
-		return parent::getLabel($this->items[$key])->for($this->getHtmlId() . '-' . $key);
+		return func_num_args()
+			? parent::getLabel($this->items[$key])->for($this->getHtmlId() . '-' . $key)
+			: $this->getLabel();
 	}
 
 }

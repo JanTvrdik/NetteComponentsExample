@@ -1,20 +1,18 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Forms\Controls;
 
-use Nette,
-	Nette\Http\FileUpload;
+use Nette;
+use Nette\Http\FileUpload;
 
 
 /**
  * Text box and browse button that allow users to select a file to upload to the server.
- *
- * @author     David Grudl
  */
 class UploadControl extends BaseControl
 {

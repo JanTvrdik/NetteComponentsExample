@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Application\UI;
@@ -12,10 +12,6 @@ use Nette;
 
 /**
  * Web form adapted for Presenter.
- *
- * @author     David Grudl
- *
- * @property-read Presenter $presenter
  */
 class Form extends Nette\Forms\Form implements ISignalReceiver
 {

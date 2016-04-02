@@ -1,5 +1,5 @@
 /**
- * This file is part of the Tracy (http://tracy.nette.org)
+ * This file is part of the Tracy (https://tracy.nette.org)
  */
 
 /* common styles */
@@ -31,6 +31,7 @@ body #tracy-debug {
 	opacity: 1;
 	border-radius: 0;
 	box-shadow: none;
+	text-shadow: none;
 }
 
 #tracy-debug b, #tracy-debug strong {
@@ -189,6 +190,8 @@ body #tracy-debug {
 	color: #575753;
 	margin: -5px -5px 5px;
 	padding: 0 25px 5px 5px;
+	max-width: 700px;
+	word-wrap: break-word;
 }
 
 #tracy-debug .tracy-mode-peek .tracy-inner, #tracy-debug .tracy-mode-float .tracy-inner {

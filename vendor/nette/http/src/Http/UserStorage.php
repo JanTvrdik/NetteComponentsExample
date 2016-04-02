@@ -1,21 +1,18 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Http;
 
-use Nette,
-	Nette\Security\IIdentity;
+use Nette;
+use Nette\Security\IIdentity;
 
 
 /**
  * Session storage for user object.
- *
- * @author  David Grudl
- * @author  Jan Tichý
  */
 class UserStorage extends Nette\Object implements Nette\Security\IUserStorage
 {
@@ -29,7 +26,7 @@ class UserStorage extends Nette\Object implements Nette\Security\IUserStorage
 	private $sessionSection;
 
 
-	public function  __construct(Session $sessionHandler)
+	public function __construct(Session $sessionHandler)
 	{
 		$this->sessionHandler = $sessionHandler;
 	}

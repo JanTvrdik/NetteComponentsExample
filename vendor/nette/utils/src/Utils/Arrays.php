@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Utils;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * Array tools library.
- *
- * @author     David Grudl
  */
 class Arrays
 {
@@ -154,8 +152,8 @@ class Arrays
 	{
 		$res = array();
 		$cb = $preserveKeys
-			? function($v, $k) use (& $res) { $res[$k] = $v; }
-			: function($v) use (& $res) { $res[] = $v; };
+			? function ($v, $k) use (& $res) { $res[$k] = $v; }
+			: function ($v) use (& $res) { $res[] = $v; };
 		array_walk_recursive($arr, $cb);
 		return $res;
 	}
@@ -234,6 +232,30 @@ class Arrays
 			$res[is_int($k) ? $v : $k] = is_int($k) ? $filling : $v;
 		}
 		return $res;
+	}
+
+
+	/**
+	 * Picks element from the array by key and return its value.
+	 * @param  array
+	 * @param  string|int array key
+	 * @param  mixed
+	 * @return mixed
+	 * @throws Nette\InvalidArgumentException if item does not exist and default value is not provided
+	 */
+	public static function pick(array & $arr, $key, $default = NULL)
+	{
+		if (array_key_exists($key, $arr)) {
+			$value = $arr[$key];
+			unset($arr[$key]);
+			return $value;
+
+		} elseif (func_num_args() < 3) {
+			throw new Nette\InvalidArgumentException("Missing item '$key'.");
+
+		} else {
+			return $default;
+		}
 	}
 
 }

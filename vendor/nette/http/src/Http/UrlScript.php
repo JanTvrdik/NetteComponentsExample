@@ -1,13 +1,11 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Http;
-
-use Nette;
 
 
 /**
@@ -22,8 +20,6 @@ use Nette;
  *
  * - scriptPath:  /admin/script.php (or simply /admin/ when script is directory index)
  * - pathInfo:    /pathinfo/ (additional path information)
- *
- * @author     David Grudl
  *
  * @property   string $scriptPath
  * @property-read string $pathInfo

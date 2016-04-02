@@ -1,25 +1,23 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Bridges\ApplicationDI;
 
-use Nette,
-	Nette\Application\UI;
+use Nette;
+use Nette\Application\UI;
 
 
 /**
  * Application extension for Nette DI.
- *
- * @author     David Grudl
  */
 class ApplicationExtension extends Nette\DI\CompilerExtension
 {
 	public $defaults = array(
-		'debugger' => TRUE,
+		'debugger' => NULL,
 		'errorPresenter' => 'Nette:Error',
 		'catchExceptions' => NULL,
 		'mapping' => NULL,
@@ -41,6 +39,7 @@ class ApplicationExtension extends Nette\DI\CompilerExtension
 
 	public function __construct($debugMode = FALSE, array $scanDirs = NULL, $tempDir = NULL)
 	{
+		$this->defaults['debugger'] = interface_exists('Tracy\IBarPanel');
 		$this->defaults['scanDirs'] = (array) $scanDirs;
 		$this->defaults['scanComposer'] = class_exists('Composer\Autoload\ClassLoader');
 		$this->defaults['catchExceptions'] = !$debugMode;
@@ -123,6 +122,9 @@ class ApplicationExtension extends Nette\DI\CompilerExtension
 		$classes = array();
 
 		if ($config['scanDirs']) {
+			if (!class_exists('Nette\Loaders\RobotLoader')) {
+				throw new Nette\NotSupportedException("RobotLoader is required to find presenters, install package `nette/robot-loader` or disable option {$this->prefix('scanDirs')}: false");
+			}
 			$robot = new Nette\Loaders\RobotLoader;
 			$robot->setCacheStorage(new Nette\Caching\Storages\DevNullStorage);
 			$robot->addDirectory($config['scanDirs']);
@@ -137,7 +139,7 @@ class ApplicationExtension extends Nette\DI\CompilerExtension
 			$classFile = dirname($rc->getFileName()) . '/autoload_classmap.php';
 			if (is_file($classFile)) {
 				$this->getContainerBuilder()->addDependency($classFile);
-				$classes = array_merge($classes, array_keys(call_user_func(function($path) {
+				$classes = array_merge($classes, array_keys(call_user_func(function ($path) {
 					return require $path;
 				}, $classFile)));
 			}

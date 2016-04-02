@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Forms;
@@ -13,19 +13,8 @@ use Nette;
 /**
  * Creates, validates and renders HTML forms.
  *
- * @author     David Grudl
- *
- * @property   mixed $action
- * @property   string $method
- * @property-read array $groups
- * @property   Nette\Localization\ITranslator|NULL $translator
- * @property-read bool $anchored
- * @property-read ISubmitterControl|FALSE $submitted
- * @property-read bool $success
- * @property-read array $httpData
  * @property-read array $errors
  * @property-read Nette\Utils\Html $elementPrototype
- * @property   IFormRenderer $renderer
  */
 class Form extends Container implements Nette\Utils\IHtmlString
 {
@@ -33,6 +22,7 @@ class Form extends Container implements Nette\Utils\IHtmlString
 	const EQUAL = ':equal',
 		IS_IN = self::EQUAL,
 		NOT_EQUAL = ':notEqual',
+		IS_NOT_IN = self::NOT_EQUAL,
 		FILLED = ':filled',
 		BLANK = ':blank',
 		REQUIRED = self::FILLED,
@@ -83,13 +73,13 @@ class Form extends Container implements Nette\Utils\IHtmlString
 	/** @internal protection token ID */
 	const PROTECTOR_ID = '_token_';
 
-	/** @var callable[]  function(Form $sender); Occurs when the form is submitted and successfully validated */
+	/** @var callable[]  function (Form $sender); Occurs when the form is submitted and successfully validated */
 	public $onSuccess;
 
-	/** @var callable[]  function(Form $sender); Occurs when the form is submitted and is not valid */
+	/** @var callable[]  function (Form $sender); Occurs when the form is submitted and is not valid */
 	public $onError;
 
-	/** @var callable[]  function(Form $sender); Occurs when the form is submitted */
+	/** @var callable[]  function (Form $sender); Occurs when the form is submitted */
 	public $onSubmit;
 
 	/** @var mixed or NULL meaning: not detected yet */
@@ -123,13 +113,14 @@ class Form extends Container implements Nette\Utils\IHtmlString
 	 */
 	public function __construct($name = NULL)
 	{
+		parent::__construct();
 		if ($name !== NULL) {
 			$this->getElementPrototype()->id = 'frm-' . $name;
 			$tracker = new Controls\HiddenField($name);
 			$tracker->setOmitted();
 			$this[self::TRACKER_ID] = $tracker;
+			$this->setParent(NULL, $name);
 		}
-		parent::__construct(NULL, $name);
 	}
 
 
@@ -159,7 +150,7 @@ class Form extends Container implements Nette\Utils\IHtmlString
 
 	/**
 	 * Returns self.
-	 * @return Form
+	 * @return self
 	 */
 	public function getForm($need = TRUE)
 	{
@@ -411,7 +402,11 @@ class Form extends Container implements Nette\Utils\IHtmlString
 
 		if (!$this->isValid()) {
 			$this->onError($this);
-		} elseif ($this->onSuccess) {
+
+		} elseif ($this->onSuccess !== NULL) {
+			if (!is_array($this->onSuccess) && !$this->onSuccess instanceof \Traversable) {
+				throw new Nette\UnexpectedValueException('Property Form::$onSuccess must be array or Traversable, ' . gettype($this->onSuccess) . ' given.');
+			}
 			foreach ($this->onSuccess as $handler) {
 				$params = Nette\Utils\Callback::toReflection($handler)->getParameters();
 				$values = isset($params[1]) ? $this->getValues($params[1]->isArray()) : NULL;
@@ -601,7 +596,10 @@ class Form extends Container implements Nette\Utils\IHtmlString
 		try {
 			return $this->getRenderer()->render($this);
 
+		} catch (\Throwable $e) {
 		} catch (\Exception $e) {
+		}
+		if (isset($e)) {
 			if (func_num_args()) {
 				throw $e;
 			}

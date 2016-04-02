@@ -1,19 +1,15 @@
 <?php
 
 /**
- * This file is part of the Tracy (http://tracy.nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Tracy (https://tracy.nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Tracy;
 
-use Tracy;
-
 
 /**
  * Rendering helpers for Debugger.
- *
- * @author     David Grudl
  */
 class Helpers
 {
@@ -25,17 +21,15 @@ class Helpers
 	public static function editorLink($file, $line = NULL)
 	{
 		if ($editor = self::editorUri($file, $line)) {
-			$dir = dirname(strtr($file, '/', DIRECTORY_SEPARATOR));
-			$base = isset($_SERVER['SCRIPT_FILENAME'])
-				? dirname(dirname(strtr($_SERVER['SCRIPT_FILENAME'], '/', DIRECTORY_SEPARATOR)))
-				: dirname($dir);
-			if (substr($dir, 0, strlen($base)) === $base) {
-				$dir = '...' . substr($dir, strlen($base));
+			$file = strtr($file, '\\', '/');
+			if (preg_match('#(^[a-z]:)?/.{1,50}$#i', $file, $m) && strlen($file) > strlen($m[0])) {
+				$file = '...' . $m[0];
 			}
+			$file = strtr($file, '/', DIRECTORY_SEPARATOR);
 			return self::formatHtml('<a href="%" title="%">%<b>%</b>%</a>',
 				$editor,
 				$file . ($line ? ":$line" : ''),
-				rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR,
+				rtrim(dirname($file), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR,
 				basename($file),
 				$line ? ":$line" : ''
 			);
@@ -52,7 +46,7 @@ class Helpers
 	public static function editorUri($file, $line = NULL)
 	{
 		if (Debugger::$editor && $file && is_file($file)) {
-			return strtr(Debugger::$editor, array('%file' => rawurlencode($file), '%line' => $line ? (int) $line : ''));
+			return strtr(Debugger::$editor, array('%file' => rawurlencode($file), '%line' => $line ? (int) $line : 1));
 		}
 	}
 
@@ -60,7 +54,7 @@ class Helpers
 	public static function formatHtml($mask)
 	{
 		$args = func_get_args();
-		return preg_replace_callback('#%#', function() use (& $args, & $count) {
+		return preg_replace_callback('#%#', function () use (& $args, & $count) {
 			return htmlspecialchars($args[++$count], ENT_IGNORE | ENT_QUOTES, 'UTF-8');
 		}, $mask);
 	}
@@ -78,6 +72,15 @@ class Helpers
 				return $item;
 			}
 		}
+	}
+
+
+	/**
+	 * @return string
+	 */
+	public static function getClass($obj)
+	{
+		return current(explode("\x00", get_class($obj)));
 	}
 
 
@@ -152,6 +155,67 @@ class Helpers
 		} else {
 			return empty($_SERVER['argv']) ? 'CLI' : 'CLI: ' . implode(' ', $_SERVER['argv']);
 		}
+	}
+
+
+	/** @internal */
+	public static function improveException($e)
+	{
+		$message = $e->getMessage();
+		if (!$e instanceof \Error && !$e instanceof \ErrorException) {
+			// do nothing
+		} elseif (preg_match('#^Call to undefined function (\S+\\\\)?(\w+)\(#', $message, $m)) {
+			$funcs = get_defined_functions();
+			$funcs = array_merge($funcs['internal'], $funcs['user']);
+			$hint = self::getSuggestion($funcs, $m[1] . $m[2]) ?: self::getSuggestion($funcs, $m[2]);
+			$message .= ", did you mean $hint()?";
+
+		} elseif (preg_match('#^Call to undefined method (\S+)::(\w+)#', $message, $m)) {
+			$hint = self::getSuggestion(get_class_methods($m[1]), $m[2]);
+			$message .= ", did you mean $hint()?";
+
+		} elseif (preg_match('#^Undefined variable: (\w+)#', $message, $m) && !empty($e->context)) {
+			$hint = self::getSuggestion(array_keys($e->context), $m[1]);
+			$message = "Undefined variable $$m[1], did you mean $$hint?";
+
+		} elseif (preg_match('#^Undefined property: (\S+)::\$(\w+)#', $message, $m)) {
+			$rc = new \ReflectionClass($m[1]);
+			$items = array_diff($rc->getProperties(\ReflectionProperty::IS_PUBLIC), $rc->getProperties(\ReflectionProperty::IS_STATIC));
+			$hint = self::getSuggestion($items, $m[2]);
+			$message .= ", did you mean $$hint?";
+
+		} elseif (preg_match('#^Access to undeclared static property: (\S+)::\$(\w+)#', $message, $m)) {
+			$rc = new \ReflectionClass($m[1]);
+			$items = array_intersect($rc->getProperties(\ReflectionProperty::IS_PUBLIC), $rc->getProperties(\ReflectionProperty::IS_STATIC));
+			$hint = self::getSuggestion($items, $m[2]);
+			$message .= ", did you mean $$hint?";
+		}
+
+		if (isset($hint)) {
+			$ref = new \ReflectionProperty($e, 'message');
+			$ref->setAccessible(TRUE);
+			$ref->setValue($e, $message);
+		}
+	}
+
+
+	/**
+	 * Finds the best suggestion.
+	 * @return string|NULL
+	 * @internal
+	 */
+	public static function getSuggestion(array $items, $value)
+	{
+		$best = NULL;
+		$min = (strlen($value) / 4 + 1) * 10 + .1;
+		foreach (array_unique($items, SORT_REGULAR) as $item) {
+			$item = is_object($item) ? $item->getName() : $item;
+			if (($len = levenshtein($item, $value, 10, 11, 10)) > 0 && $len < $min) {
+				$min = $len;
+				$best = $item;
+			}
+		}
+		return $best;
 	}
 
 }

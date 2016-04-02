@@ -4,7 +4,7 @@
  * Requirements Checker: This script will check if your system meets
  * the requirements for running Nette Framework.
  *
- * This file is part of the Nette Framework (http://nette.org)
+ * This file is part of the Nette Framework (https://nette.org)
  */
 
 
@@ -203,6 +203,13 @@ $tests[] = array(
 	'required' => FALSE,
 	'passed' => extension_loaded('fileinfo') || function_exists('mime_content_type'),
 	'description' => 'Fileinfo extension or function <code>mime_content_type()</code> are absent. You will not be able to determine mime type of uploaded files.',
+);
+
+$tests[] = array(
+	'title' => 'Intl extension',
+	'required' => FALSE,
+	'passed' => class_exists('Transliterator', FALSE),
+	'description' => 'Class Transliterator is absent, the output of Nette\Utils\Strings::webalize() and Nette\Utils\Strings::toAscii() may not be accurate for non-latin alphabets.',
 );
 
 $tests[] = array(

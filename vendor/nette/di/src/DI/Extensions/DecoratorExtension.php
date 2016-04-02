@@ -1,20 +1,17 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\DI\Extensions;
 
-use Nette,
-	Nette\DI\Statement;
+use Nette;
 
 
 /**
  * Decorators for services.
- *
- * @author     David Grudl
  */
 class DecoratorExtension extends Nette\DI\CompilerExtension
 {
@@ -60,10 +57,11 @@ class DecoratorExtension extends Nette\DI\CompilerExtension
 	private function findByType($type)
 	{
 		$type = ltrim($type, '\\');
-		return array_filter($this->getContainerBuilder()->getDefinitions(), function($def) use ($type) {
-			return $def->getClass() === $type
-				|| is_subclass_of($def->getClass(), $type)
-				|| (PHP_VERSION_ID < 50307 && array_key_exists($type, class_implements($def->getClass())));
+		return array_filter($this->getContainerBuilder()->getDefinitions(), function ($def) use ($type) {
+			return $def->getClass() === $type || is_subclass_of($def->getClass(), $type)
+				|| (PHP_VERSION_ID < 50307 && array_key_exists($type, class_implements($def->getClass())))
+				|| $def->getImplement() === $type || is_subclass_of($def->getImplement(), $type)
+				|| (PHP_VERSION_ID < 50307 && $def->getImplement() && array_key_exists($type, class_implements($def->getImplement())));
 		});
 	}
 

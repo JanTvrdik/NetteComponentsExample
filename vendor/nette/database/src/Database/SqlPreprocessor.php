@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Database;
@@ -12,8 +12,6 @@ use Nette;
 
 /**
  * SQL preprocessor.
- *
- * @author     David Grudl
  */
 class SqlPreprocessor extends Nette\Object
 {
@@ -50,7 +48,8 @@ class SqlPreprocessor extends Nette\Object
 	public function process($params)
 	{
 		$this->params = $params;
-		$this->counter = 0; $prev = -1;
+		$this->counter = 0;
+		$prev = -1;
 		$this->remaining = array();
 		$this->arrayMode = NULL;
 		$res = array();
@@ -181,7 +180,7 @@ class SqlPreprocessor extends Nette\Object
 					}
 					foreach ($value as $val) {
 						$vx2 = array();
-							foreach ($val as $v) {
+						foreach ($val as $v) {
 							$vx2[] = $this->formatValue($v);
 						}
 						$vx[] = implode(', ', $vx2);
