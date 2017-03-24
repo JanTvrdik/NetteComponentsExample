@@ -13,8 +13,10 @@ use Nette;
 /**
  * DI container loader.
  */
-class ContainerLoader extends Nette\Object
+class ContainerLoader
 {
+	use Nette\SmartObject;
+
 	/** @var bool */
 	private $autoRebuild = FALSE;
 
@@ -30,12 +32,16 @@ class ContainerLoader extends Nette\Object
 
 
 	/**
-	 * @param  mixed
 	 * @param  callable  function (Nette\DI\Compiler $compiler): string|NULL
+	 * @param  mixed
 	 * @return string
 	 */
-	public function load($key, $generator)
+	public function load($generator, $key = NULL)
 	{
+		if (!is_callable($generator)) { // back compatiblity
+			trigger_error(__METHOD__ . ': order of arguments has been swapped.', E_USER_DEPRECATED);
+			list($generator, $key) = [$key, $generator];
+		}
 		$class = $this->getClassName($key);
 		if (!class_exists($class, FALSE)) {
 			$this->loadFile($class, $generator);
@@ -72,13 +78,19 @@ class ContainerLoader extends Nette\Object
 			throw new Nette\IOException("Unable to acquire exclusive lock on '$file.lock'.");
 		}
 
-		if (!is_file($file) || $this->isExpired($file)) {
-			list($toWrite[$file], $toWrite["$file.meta"]) = $this->generate($class, $generator);
+		if (!is_file($file) || $this->isExpired($file, $updatedMeta)) {
+			if (isset($updatedMeta)) {
+				$toWrite["$file.meta"] = $updatedMeta;
+			} else {
+				list($toWrite[$file], $toWrite["$file.meta"]) = $this->generate($class, $generator);
+			}
 
 			foreach ($toWrite as $name => $content) {
 				if (file_put_contents("$name.tmp", $content) !== strlen($content) || !rename("$name.tmp", $name)) {
 					@unlink("$name.tmp"); // @ - file may not exist
 					throw new Nette\IOException("Unable to create file '$name'.");
+				} elseif (function_exists('opcache_invalidate')) {
+					@opcache_invalidate($name, TRUE); // @ can be restricted
 				}
 			}
 		}
@@ -90,12 +102,14 @@ class ContainerLoader extends Nette\Object
 	}
 
 
-	private function isExpired($file)
+	private function isExpired($file, &$updatedMeta = NULL)
 	{
 		if ($this->autoRebuild) {
-			$meta = @unserialize(file_get_contents("$file.meta")); // @ - file may not exist
-			$files = $meta ? array_combine($tmp = array_keys($meta), $tmp) : array();
-			return $meta !== @array_map('filemtime', $files); // @ - files may not exist
+			$meta = @unserialize((string) file_get_contents("$file.meta")); // @ - file may not exist
+			$orig = $meta[2];
+			return empty($meta[0])
+				|| DependencyChecker::isExpired(...$meta)
+				|| ($orig !== $meta[2] && $updatedMeta = serialize($meta));
 		}
 		return FALSE;
 	}
@@ -107,15 +121,12 @@ class ContainerLoader extends Nette\Object
 	protected function generate($class, $generator)
 	{
 		$compiler = new Compiler;
-		$compiler->getContainerBuilder()->setClassName($class);
-		$code = call_user_func_array($generator, array(& $compiler));
-		$code = $code ?: implode("\n\n\n", $compiler->compile());
-		$files = $compiler->getDependencies();
-		$files = $files ? array_combine($files, $files) : array(); // workaround for PHP 5.3 array_combine
-		return array(
+		$compiler->setClassName($class);
+		$code = call_user_func_array($generator, [&$compiler]) ?: $compiler->compile();
+		return [
 			"<?php\n$code",
-			serialize(@array_map('filemtime', $files)), // @ - file may not exist
-		);
+			serialize($compiler->exportDependencies())
+		];
 	}
 
 }

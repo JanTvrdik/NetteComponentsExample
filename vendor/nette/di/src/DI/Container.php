@@ -13,27 +13,29 @@ use Nette;
 /**
  * The dependency injection container default implementation.
  */
-class Container extends Nette\Object
+class Container
 {
+	use Nette\SmartObject;
+
 	const TAGS = 'tags';
 	const TYPES = 'types';
 	const SERVICES = 'services';
 	const ALIASES = 'aliases';
 
 	/** @var array  user parameters */
-	/*private*/public $parameters = array();
+	/*private*/public $parameters = [];
 
 	/** @var object[]  storage for shared objects */
-	private $registry = array();
+	private $registry = [];
 
 	/** @var array[] */
-	protected $meta = array();
+	protected $meta = [];
 
 	/** @var array circular reference detector */
 	private $creating;
 
 
-	public function __construct(array $params = array())
+	public function __construct(array $params = [])
 	{
 		$this->parameters = $params + $this->parameters;
 	}
@@ -52,7 +54,7 @@ class Container extends Nette\Object
 	 * Adds the service to the container.
 	 * @param  string
 	 * @param  object
-	 * @return self
+	 * @return static
 	 */
 	public function addService($name, $service)
 	{
@@ -136,7 +138,7 @@ class Container extends Nette\Object
 		$name = isset($this->meta[self::ALIASES][$name]) ? $this->meta[self::ALIASES][$name] : $name;
 		return isset($this->registry[$name])
 			|| (method_exists($this, $method = self::getMethodName($name))
-				&& ($rm = new \ReflectionMethod($this, $method)) && $rm->getName() === $method);
+				&& (new \ReflectionMethod($this, $method))->getName() === $method);
 	}
 
 
@@ -161,25 +163,24 @@ class Container extends Nette\Object
 	 * @return object
 	 * @throws MissingServiceException
 	 */
-	public function createService($name, array $args = array())
+	public function createService($name, array $args = [])
 	{
 		$name = isset($this->meta[self::ALIASES][$name]) ? $this->meta[self::ALIASES][$name] : $name;
 		$method = self::getMethodName($name);
 		if (isset($this->creating[$name])) {
 			throw new Nette\InvalidStateException(sprintf('Circular reference detected for services: %s.', implode(', ', array_keys($this->creating))));
 
-		} elseif (!method_exists($this, $method) || !($rm = new \ReflectionMethod($this, $method)) || $rm->getName() !== $method) {
+		} elseif (!method_exists($this, $method) || (new \ReflectionMethod($this, $method))->getName() !== $method) {
 			throw new MissingServiceException("Service '$name' not found.");
 		}
 
-		$this->creating[$name] = TRUE;
 		try {
-			$service = call_user_func_array(array($this, $method), $args);
-		} catch (\Exception $e) {
+			$this->creating[$name] = TRUE;
+			$service = $this->$method(...$args);
+
+		} finally {
 			unset($this->creating[$name]);
-			throw $e;
 		}
-		unset($this->creating[$name]);
 
 		if (!is_object($service)) {
 			throw new Nette\UnexpectedValueException("Unable to create service '$name', value returned by method $method() is not object.");
@@ -196,7 +197,7 @@ class Container extends Nette\Object
 	 * @return object  service or NULL
 	 * @throws MissingServiceException
 	 */
-	public function getByType($class, $need = TRUE)
+	public function getByType($class, $throw = TRUE)
 	{
 		$class = ltrim($class, '\\');
 		if (!empty($this->meta[self::TYPES][$class][TRUE])) {
@@ -205,7 +206,7 @@ class Container extends Nette\Object
 			}
 			throw new MissingServiceException("Multiple services of type $class found: " . implode(', ', $names) . '.');
 
-		} elseif ($need) {
+		} elseif ($throw) {
 			throw new MissingServiceException("Service of type $class not found.");
 		}
 	}
@@ -220,8 +221,8 @@ class Container extends Nette\Object
 	{
 		$class = ltrim($class, '\\');
 		return empty($this->meta[self::TYPES][$class])
-			? array()
-			: call_user_func_array('array_merge', $this->meta[self::TYPES][$class]);
+			? []
+			: array_merge(...array_values($this->meta[self::TYPES][$class]));
 	}
 
 
@@ -232,7 +233,7 @@ class Container extends Nette\Object
 	 */
 	public function findByTag($tag)
 	{
-		return isset($this->meta[self::TAGS][$tag]) ? $this->meta[self::TAGS][$tag] : array();
+		return isset($this->meta[self::TAGS][$tag]) ? $this->meta[self::TAGS][$tag] : [];
 	}
 
 
@@ -246,7 +247,7 @@ class Container extends Nette\Object
 	 * @return object
 	 * @throws Nette\InvalidArgumentException
 	 */
-	public function createInstance($class, array $args = array())
+	public function createInstance($class, array $args = [])
 	{
 		$rc = new \ReflectionClass($class);
 		if (!$rc->isInstantiable()) {
@@ -277,12 +278,9 @@ class Container extends Nette\Object
 	 * Calls method using autowiring.
 	 * @return mixed
 	 */
-	public function callMethod($function, array $args = array())
+	public function callMethod(callable $function, array $args = [])
 	{
-		return call_user_func_array(
-			$function,
-			Helpers::autowireArguments(Nette\Utils\Callback::toReflection($function), $args, $this)
-		);
+		return $function(...Helpers::autowireArguments(Nette\Utils\Callback::toReflection($function), $args, $this));
 	}
 
 
@@ -304,7 +302,7 @@ class Container extends Nette\Object
 	/** @deprecated */
 	public function &__get($name)
 	{
-		$this->error(__METHOD__, 'getService');
+		trigger_error(__METHOD__ . ' is deprecated; use getService().', E_USER_DEPRECATED);
 		$tmp = $this->getService($name);
 		return $tmp;
 	}
@@ -313,7 +311,7 @@ class Container extends Nette\Object
 	/** @deprecated */
 	public function __set($name, $service)
 	{
-		$this->error(__METHOD__, 'addService');
+		trigger_error(__METHOD__ . ' is deprecated; use addService().', E_USER_DEPRECATED);
 		$this->addService($name, $service);
 	}
 
@@ -321,7 +319,7 @@ class Container extends Nette\Object
 	/** @deprecated */
 	public function __isset($name)
 	{
-		$this->error(__METHOD__, 'hasService');
+		trigger_error(__METHOD__ . ' is deprecated; use hasService().', E_USER_DEPRECATED);
 		return $this->hasService($name);
 	}
 
@@ -329,16 +327,8 @@ class Container extends Nette\Object
 	/** @deprecated */
 	public function __unset($name)
 	{
-		$this->error(__METHOD__, 'removeService');
+		trigger_error(__METHOD__ . ' is deprecated; use removeService().', E_USER_DEPRECATED);
 		$this->removeService($name);
-	}
-
-
-	private function error($oldName, $newName)
-	{
-		if (empty($this->parameters['container']['accessors'])) {
-			trigger_error("$oldName() is deprecated; use $newName() or enable di.accessors in configuration.", E_USER_DEPRECATED);
-		}
 	}
 
 

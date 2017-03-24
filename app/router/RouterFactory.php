@@ -1,11 +1,16 @@
 <?php
 
+namespace App;
+
 use Nette\Application\IRouter;
 use Nette\Application\Routers\Route;
+use Nette\SmartObject;
 
 
-class RouterFactory extends Nette\Object
+class RouterFactory
 {
+	use SmartObject;
+
 
 	/**
 	 * @return IRouter
@@ -14,5 +19,4 @@ class RouterFactory extends Nette\Object
 	{
 		return new Route('<presenter>/<action>', 'Demo:default');
 	}
-
 }

@@ -13,8 +13,10 @@ use Nette;
 /**
  * Output caching helper.
  */
-class OutputHelper extends Nette\Object
+class OutputHelper
 {
+	use Nette\SmartObject;
+
 	/** @var array */
 	public $dependencies;
 
@@ -35,7 +37,6 @@ class OutputHelper extends Nette\Object
 
 	/**
 	 * Stops and saves the cache.
-	 * @param  array  dependencies
 	 * @return void
 	 */
 	public function end(array $dependencies = NULL)

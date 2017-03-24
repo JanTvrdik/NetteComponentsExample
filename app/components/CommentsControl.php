@@ -1,16 +1,15 @@
 <?php
 
+namespace App;
+
 use Nette\Application\UI;
 
 
 /**
  * Komentářová komponenta.
- *
- * @author   Jan Tvrdík
  */
 class CommentsControl extends UI\Control
 {
-
 	/** @var     int */
 	private $articleId;
 
@@ -72,7 +71,7 @@ class CommentsControl extends UI\Control
 		$form->addTextArea('message', 'Text:')
 			->setRequired();
 		$form->addSubmit('send', 'Přidat komentář');
-		$form->onSuccess[] = array($this, 'processAddCommentForm');
+		$form->onSuccess[] = [$this, 'processAddCommentForm'];
 
 		return $form;
 	}
@@ -82,7 +81,7 @@ class CommentsControl extends UI\Control
 	 * Zpracování formuláře na přidávání komentářů.
 	 *
 	 * @todo     Metoda neřeší, že $this->articleId může být NULL nebo může odkazovat na neexistují článek.
-	 * @param    UI\Form $form     odeslaný formulář, jehož instanci by šlo také získat pomocí $this['addCommentForm']
+	 * @param    UI\Form $form odeslaný formulář, jehož instanci by šlo také získat pomocí $this['addCommentForm']
 	 * @return   void
 	 */
 	public function processAddCommentForm(UI\Form $form)
@@ -97,7 +96,7 @@ class CommentsControl extends UI\Control
 	/**
 	 * Odstraní komentář s daným ID.
 	 *
-	 * @param    int $id           ID komentáře
+	 * @param    int $id ID komentáře
 	 * @return   void
 	 */
 	public function handleDelete($id)
@@ -106,5 +105,4 @@ class CommentsControl extends UI\Control
 		$this->flashMessage('Díky za očistu!');
 		$this->redirect('this');
 	}
-
 }

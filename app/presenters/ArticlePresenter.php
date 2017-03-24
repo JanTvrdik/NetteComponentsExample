@@ -1,14 +1,13 @@
 <?php
 
+namespace App;
+
+use Nette;
 use Nette\Application\UI;
 
 
-/**
- * @author   Jan Tvrdík
- */
 final class ArticlePresenter extends UI\Presenter
 {
-
 	/** @var     Nette\Database\IRow */
 	private $article;
 
@@ -96,5 +95,4 @@ final class ArticlePresenter extends UI\Presenter
 			return $control;
 		});
 	}
-
 }

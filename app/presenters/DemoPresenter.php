@@ -1,15 +1,13 @@
 <?php
 
+namespace App;
+
+use Nette;
 use Nette\Application\UI;
-use Tracy\Debugger;
 
 
-/**
- * @author   Jan Tvrdík
- */
 final class DemoPresenter extends UI\Presenter
 {
-
 	public function renderDefault()
 	{
 		$this->dump($this->getComponent('root'), 'Získání komponenty s názvem root');
@@ -58,11 +56,10 @@ final class DemoPresenter extends UI\Presenter
 	private function dump($var, $title = NULL)
 	{
 		if ($var instanceof Nette\ComponentModel\IComponent) {
-			Debugger::barDump(array($var->getName() => $var), $title);
+			bdump([$var->getName() => $var], $title);
 
 		} else {
-			Debugger::barDump($var, $title);
+			bdump($var, $title);
 		}
 	}
-
 }

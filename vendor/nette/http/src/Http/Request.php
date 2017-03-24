@@ -27,8 +27,10 @@ use Nette;
  * @property-read string|NULL $remoteHost
  * @property-read string|NULL $rawBody
  */
-class Request extends Nette\Object implements IRequest
+class Request implements IRequest
 {
+	use Nette\SmartObject;
+
 	/** @var string */
 	private $method;
 
@@ -130,15 +132,10 @@ class Request extends Nette\Object implements IRequest
 	/**
 	 * Returns uploaded file.
 	 * @param  string key
-	 * @return FileUpload|NULL
+	 * @return FileUpload|array|NULL
 	 */
 	public function getFile($key)
 	{
-		if (func_num_args() > 1) {
-			trigger_error('Calling getFile() with multiple keys is deprecated.', E_USER_DEPRECATED);
-			return Nette\Utils\Arrays::get($this->files, func_get_args(), NULL);
-		}
-
 		return isset($this->files[$key]) ? $this->files[$key] : NULL;
 	}
 
@@ -204,6 +201,7 @@ class Request extends Nette\Object implements IRequest
 	 */
 	public function isPost()
 	{
+		trigger_error('Method isPost() is deprecated, use isMethod(\'POST\') instead.', E_USER_DEPRECATED);
 		return $this->isMethod('POST');
 	}
 
@@ -212,8 +210,8 @@ class Request extends Nette\Object implements IRequest
 	 * Return the value of the HTTP header. Pass the header name as the
 	 * plain, HTTP-specified header name (e.g. 'Accept-Encoding').
 	 * @param  string
-	 * @param  mixed
-	 * @return mixed
+	 * @param  string|NULL
+	 * @return string|NULL
 	 */
 	public function getHeader($header, $default = NULL)
 	{

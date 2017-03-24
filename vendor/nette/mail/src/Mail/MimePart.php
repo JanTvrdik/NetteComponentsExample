@@ -14,10 +14,12 @@ use Nette\Utils\Strings;
 /**
  * MIME message part.
  *
- * @property   mixed $body
+ * @property   string $body
  */
-class MimePart extends Nette\Object
+class MimePart
 {
+	use Nette\SmartObject;
+
 	/** encoding */
 	const ENCODING_BASE64 = 'base64',
 		ENCODING_7BIT = '7bit',
@@ -29,13 +31,13 @@ class MimePart extends Nette\Object
 	const LINE_LENGTH = 76;
 
 	/** @var array */
-	private $headers = array();
+	private $headers = [];
 
 	/** @var array */
-	private $parts = array();
+	private $parts = [];
 
 	/** @var string */
-	private $body;
+	private $body = '';
 
 
 	/**
@@ -43,7 +45,7 @@ class MimePart extends Nette\Object
 	 * @param  string
 	 * @param  string|array  value or pair email => name
 	 * @param  bool
-	 * @return self
+	 * @return static
 	 */
 	public function setHeader($name, $value, $append = FALSE)
 	{
@@ -57,16 +59,17 @@ class MimePart extends Nette\Object
 			}
 
 		} elseif (is_array($value)) { // email
-			$tmp = & $this->headers[$name];
+			$tmp = &$this->headers[$name];
 			if (!$append || !is_array($tmp)) {
-				$tmp = array();
+				$tmp = [];
 			}
 
 			foreach ($value as $email => $recipient) {
-				if ($recipient !== NULL && !Strings::checkEncoding($recipient)) {
+				if ($recipient === NULL) {
+					// continue
+				} elseif (!Strings::checkEncoding($recipient)) {
 					Nette\Utils\Validators::assert($recipient, 'unicode', "header '$name'");
-				}
-				if (preg_match('#[\r\n]#', $recipient)) {
+				} elseif (preg_match('#[\r\n]#', $recipient)) {
 					throw new Nette\InvalidArgumentException('Name must not contain line separator.');
 				}
 				Nette\Utils\Validators::assert($email, 'email', "header '$name'");
@@ -98,7 +101,7 @@ class MimePart extends Nette\Object
 	/**
 	 * Removes a header.
 	 * @param  string
-	 * @return self
+	 * @return static
 	 */
 	public function clearHeader($name)
 	{
@@ -110,8 +113,7 @@ class MimePart extends Nette\Object
 	/**
 	 * Returns an encoded header.
 	 * @param  string
-	 * @param  string
-	 * @return string
+	 * @return string|NULL
 	 */
 	public function getEncodedHeader($name)
 	{
@@ -155,7 +157,7 @@ class MimePart extends Nette\Object
 	 * Sets Content-Type header.
 	 * @param  string
 	 * @param  string
-	 * @return self
+	 * @return static
 	 */
 	public function setContentType($contentType, $charset = NULL)
 	{
@@ -167,7 +169,7 @@ class MimePart extends Nette\Object
 	/**
 	 * Sets Content-Transfer-Encoding header.
 	 * @param  string
-	 * @return self
+	 * @return static
 	 */
 	public function setEncoding($encoding)
 	{
@@ -188,7 +190,7 @@ class MimePart extends Nette\Object
 
 	/**
 	 * Adds or creates new multipart.
-	 * @return MimePart
+	 * @return self
 	 */
 	public function addPart(MimePart $part = NULL)
 	{
@@ -198,7 +200,8 @@ class MimePart extends Nette\Object
 
 	/**
 	 * Sets textual body.
-	 * @return self
+	 * @param  string
+	 * @return static
 	 */
 	public function setBody($body)
 	{
@@ -209,7 +212,7 @@ class MimePart extends Nette\Object
 
 	/**
 	 * Gets textual body.
-	 * @return mixed
+	 * @return string
 	 */
 	public function getBody()
 	{
@@ -238,7 +241,7 @@ class MimePart extends Nette\Object
 		}
 		$output .= self::EOL;
 
-		$body = (string) $this->body;
+		$body = $this->body;
 		if ($body !== '') {
 			switch ($this->getEncoding()) {
 				case self::ENCODING_QUOTED_PRINTABLE:
@@ -254,7 +257,7 @@ class MimePart extends Nette\Object
 					// break intentionally omitted
 
 				case self::ENCODING_8BIT:
-					$body = str_replace(array("\x00", "\r"), '', $body);
+					$body = str_replace(["\x00", "\r"], '', $body);
 					$body = str_replace("\n", self::EOL, $body);
 					$output .= $body;
 					break;
@@ -288,7 +291,7 @@ class MimePart extends Nette\Object
 	 * @param  bool
 	 * @return string
 	 */
-	private static function encodeHeader($s, & $offset = 0, $quotes = FALSE)
+	private static function encodeHeader($s, &$offset = 0, $quotes = FALSE)
 	{
 		if (strspn($s, "!\"#$%&\'()*+,-./0123456789:;<>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^`abcdefghijklmnopqrstuvwxyz{|}~=? _\r\n\t") === strlen($s)) {
 			if ($quotes && preg_match('#[^ a-zA-Z0-9!\#$%&\'*+/?^_`{|}~-]#', $s)) { // RFC 2822 atext except =
@@ -303,11 +306,11 @@ class MimePart extends Nette\Object
 			$offset = 1;
 		}
 
-		$s = iconv_mime_encode(str_repeat(' ', $old = $offset), $s, array(
+		$s = iconv_mime_encode(str_repeat(' ', $old = $offset), $s, [
 			'scheme' => 'B', // Q is broken
 			'input-charset' => 'UTF-8',
 			'output-charset' => 'UTF-8',
-		));
+		]);
 
 		$offset = strlen($s) - strrpos($s, "\n");
 		$s = str_replace("\n ", "\n\t", substr($s, $old + 2)); // adds ': '
@@ -315,7 +318,7 @@ class MimePart extends Nette\Object
 	}
 
 
-	private static function append($s, & $offset = 0)
+	private static function append($s, &$offset = 0)
 	{
 		if ($offset + strlen($s) > self::LINE_LENGTH) {
 			$offset = 1;

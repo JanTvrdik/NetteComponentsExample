@@ -2,7 +2,10 @@ Nette Security: Access Control
 ==============================
 
 [![Downloads this Month](https://img.shields.io/packagist/dm/nette/security.svg)](https://packagist.org/packages/nette/security)
-[![Build Status](https://travis-ci.org/nette/security.svg?branch=v2.3)](https://travis-ci.org/nette/security)
+[![Build Status](https://travis-ci.org/nette/security.svg?branch=master)](https://travis-ci.org/nette/security)
+[![Coverage Status](https://coveralls.io/repos/github/nette/security/badge.svg?branch=master)](https://coveralls.io/github/nette/security?branch=master)
+[![Latest Stable Version](https://poser.pugx.org/nette/security/v/stable)](https://github.com/nette/security/releases)
+[![License](https://img.shields.io/badge/license-New%20BSD-blue.svg)](https://github.com/nette/security/blob/master/license.md)
 
 - user login and logout
 - verifying user privileges
@@ -39,23 +42,20 @@ Simple, right?
 .[note]
 Logging in requires users to have cookies enabled - other methods are not safe!
 
-Besides logging the user out with the `logout()` method, it can be done automatically based on specified time interval or closing the browser window. For this configuration we have to call `setExpiration()` during the login process. As an argument, it takes a relative time in seconds, UNIX timestamp, or textual representation of time. The second argument specifies whether the user should be logged out when the browser is closed.
+Besides logging the user out with the `logout()` method, it can be done automatically based on specified time interval or closing the browser window. For this configuration we have to call `setExpiration()` during the login process. As an argument, it takes a relative time in seconds, UNIX timestamp, or textual representation of time.
 
 ```php
-// login expires after 30 minutes of inactivity or after closing browser
-$user->setExpiration('30 minutes', TRUE);
+// login expires after 30 minutes of inactivity
+$user->setExpiration('30 minutes');
 
 // login expires after two days of inactivity
-$user->setExpiration('2 days', FALSE);
-
-// login expires when a browser is closed, but not sooner (ie. without a time limit)
-$user->setExpiration(0, TRUE);
+$user->setExpiration('2 days');
 ```
 
 .[note]
 Expiration must be set to value equal or lower than the expiration of [sessions].
 
-The reason of last logout can be obtained by method `$user->getLogoutReason()`, which returns one of these constants: `IUserStorage::INACTIVITY` if time expired, `IUserStorage::BROWSER_CLOSED` when user has closed the browser or `IUserStorage::MANUAL` when the `logout()` method was called.
+The reason of last logout can be obtained by method `$user->getLogoutReason()`, which returns one of these constants: `IUserStorage::INACTIVITY` if time expired or `IUserStorage::MANUAL` when the `logout()` method was called.
 
 To make the example above work, we in fact have to create an object that verifies user's name and password. It's called **authenticator**. Its trivial implementation is the class [api:Nette\Security\SimpleAuthenticator], which in its constructor accepts an associative array:
 

@@ -15,8 +15,10 @@ use Tracy;
 /**
  * Dependency injection container panel for Debugger Bar.
  */
-class ContainerPanel extends Nette\Object implements Tracy\IBarPanel
+class ContainerPanel implements Tracy\IBarPanel
 {
+	use Nette\SmartObject;
+
 	/** @var int */
 	public static $compilationTime;
 
@@ -40,7 +42,7 @@ class ContainerPanel extends Nette\Object implements Tracy\IBarPanel
 	 */
 	public function getTab()
 	{
-		ob_start();
+		ob_start(function () {});
 		$elapsedTime = $this->elapsedTime;
 		require __DIR__ . '/templates/ContainerPanel.tab.phtml';
 		return ob_get_clean();
@@ -55,9 +57,8 @@ class ContainerPanel extends Nette\Object implements Tracy\IBarPanel
 	{
 		$container = $this->container;
 		$registry = $this->getContainerProperty('registry');
-		$rc = new \ReflectionClass($container);
-		$file = $rc->getFileName();
-		$tags = array();
+		$file = (new \ReflectionClass($container))->getFileName();
+		$tags = [];
 		$meta = $this->getContainerProperty('meta');
 		$services = $meta[Container::SERVICES];
 		ksort($services);
@@ -69,7 +70,7 @@ class ContainerPanel extends Nette\Object implements Tracy\IBarPanel
 			}
 		}
 
-		ob_start();
+		ob_start(function () {});
 		require __DIR__ . '/templates/ContainerPanel.panel.phtml';
 		return ob_get_clean();
 	}
@@ -77,8 +78,7 @@ class ContainerPanel extends Nette\Object implements Tracy\IBarPanel
 
 	private function getContainerProperty($name)
 	{
-		$rc = new \ReflectionClass('Nette\DI\Container');
-		$prop = $rc->getProperty($name);
+		$prop = (new \ReflectionClass(Nette\DI\Container::class))->getProperty($name);
 		$prop->setAccessible(TRUE);
 		return $prop->getValue($this->container);
 	}

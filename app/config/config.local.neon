@@ -1,4 +1,4 @@
 database:
-	dsn: "mysql:host=127.0.0.1;dbname=components_demo"
+	dsn: "mysql:host=127.0.0.1;dbname=nette_components_example"
 	user: "root"
 	password: "toor"

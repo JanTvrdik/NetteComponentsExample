@@ -7,7 +7,7 @@
 
 namespace Nette\PhpGenerator;
 
-use Nette\Object;
+use Nette;
 use Nette\Utils\Strings;
 
 
@@ -19,44 +19,13 @@ use Nette\Utils\Strings;
  * - doc comments
  * - one or more namespaces
  */
-class PhpFile extends Object
+class PhpFile
 {
-	/** @var string[] */
-	private $documents = array();
+	use Nette\SmartObject;
+	use Traits\CommentAware;
 
 	/** @var PhpNamespace[] */
-	private $namespaces = array();
-
-
-	/**
-	 * @return string[]
-	 */
-	public function getDocuments()
-	{
-		return $this->documents;
-	}
-
-
-	/**
-	 * @param  string[]
-	 * @return self
-	 */
-	public function setDocuments(array $documents)
-	{
-		$this->documents = $documents;
-		return $this;
-	}
-
-
-	/**
-	 * @param  string
-	 * @return self
-	 */
-	public function addDocument($document)
-	{
-		$this->documents[] = $document;
-		return $this;
-	}
+	private $namespaces = [];
 
 
 	/**
@@ -119,7 +88,7 @@ class PhpFile extends Object
 
 		return Strings::normalize(
 			"<?php\n"
-			. ($this->documents ? "\n" . str_replace("\n", "\n * ", "/**\n" . implode("\n", $this->documents)) . "\n */\n\n" : '')
+			. ($this->comment ? "\n" . Helpers::formatDocComment($this->comment . "\n") . "\n" : '')
 			. implode("\n\n", $this->namespaces)
 		) . "\n";
 	}

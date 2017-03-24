@@ -13,8 +13,10 @@ use Nette;
 /**
  * Sends emails via the SMTP server.
  */
-class SmtpMailer extends Nette\Object implements IMailer
+class SmtpMailer implements IMailer
 {
+	use Nette\SmartObject;
+
 	/** @var resource */
 	private $connection;
 
@@ -36,11 +38,14 @@ class SmtpMailer extends Nette\Object implements IMailer
 	/** @var int */
 	private $timeout;
 
+	/** @var resource */
+	private $context;
+
 	/** @var bool */
 	private $persistent;
 
 
-	public function __construct(array $options = array())
+	public function __construct(array $options = [])
 	{
 		if (isset($options['host'])) {
 			$this->host = $options['host'];
@@ -53,6 +58,7 @@ class SmtpMailer extends Nette\Object implements IMailer
 		$this->password = isset($options['password']) ? $options['password'] : '';
 		$this->secure = isset($options['secure']) ? $options['secure'] : '';
 		$this->timeout = isset($options['timeout']) ? (int) $options['timeout'] : 20;
+		$this->context = isset($options['context']) ? stream_context_create($options['context']) : stream_context_get_default();
 		if (!$this->port) {
 			$this->port = $this->secure === 'ssl' ? 465 : 25;
 		}
@@ -85,7 +91,7 @@ class SmtpMailer extends Nette\Object implements IMailer
 				(array) $mail->getHeader('Cc'),
 				(array) $mail->getHeader('Bcc')
 			) as $email => $name) {
-				$this->write("RCPT TO:<$email>", array(250, 251));
+				$this->write("RCPT TO:<$email>", [250, 251]);
 			}
 
 			$mail->setHeader('Bcc', NULL);
@@ -116,7 +122,7 @@ class SmtpMailer extends Nette\Object implements IMailer
 	{
 		$this->connection = @stream_socket_client( // @ is escalated to exception
 			($this->secure === 'ssl' ? 'ssl://' : '') . $this->host . ':' . $this->port,
-			$errno, $error, $this->timeout
+			$errno, $error, $this->timeout, STREAM_CLIENT_CONNECT, $this->context
 		);
 		if (!$this->connection) {
 			throw new SmtpException($error, $errno);
@@ -126,7 +132,8 @@ class SmtpMailer extends Nette\Object implements IMailer
 
 		$self = isset($_SERVER['HTTP_HOST']) && preg_match('#^[\w.-]+\z#', $_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 		$this->write("EHLO $self");
-		if ((int) $this->read() !== 250) {
+		$ehloResponse = $this->read();
+		if ((int) $ehloResponse !== 250) {
 			$this->write("HELO $self", 250);
 		}
 
@@ -139,9 +146,19 @@ class SmtpMailer extends Nette\Object implements IMailer
 		}
 
 		if ($this->username != NULL && $this->password != NULL) {
-			$this->write('AUTH LOGIN', 334);
-			$this->write(base64_encode($this->username), 334, 'username');
-			$this->write(base64_encode($this->password), 235, 'password');
+			$authMechanisms = [];
+			if (preg_match('~^250[ -]AUTH (.*)$~im', $ehloResponse, $matches)) {
+				$authMechanisms = explode(' ', trim($matches[1]));
+			}
+
+			if (in_array('PLAIN', $authMechanisms, TRUE)) {
+				$credentials = $this->username . "\0" . $this->username . "\0" . $this->password;
+				$this->write('AUTH PLAIN ' . base64_encode($credentials), 235, 'PLAIN credentials');
+			} else {
+				$this->write('AUTH LOGIN', 334);
+				$this->write(base64_encode($this->username), 334, 'username');
+				$this->write(base64_encode($this->password), 235, 'password');
+			}
 		}
 	}
 
@@ -160,7 +177,7 @@ class SmtpMailer extends Nette\Object implements IMailer
 	/**
 	 * Writes data to server and checks response against expected code if some provided.
 	 * @param  string
-	 * @param  int   response code
+	 * @param  int|int[] response code
 	 * @param  string  error message
 	 * @return void
 	 */
@@ -183,7 +200,7 @@ class SmtpMailer extends Nette\Object implements IMailer
 	protected function read()
 	{
 		$s = '';
-		while (($line = fgets($this->connection, 1e3)) != NULL) { // intentionally ==
+		while (($line = fgets($this->connection, 1000)) != NULL) { // intentionally ==
 			$s .= $line;
 			if (substr($line, 3, 1) === ' ') {
 				break;

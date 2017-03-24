@@ -20,7 +20,8 @@ class Helpers
 	 */
 	public static function editorLink($file, $line = NULL)
 	{
-		if ($editor = self::editorUri($file, $line)) {
+		$file = strtr($origFile = $file, Debugger::$editorMapping);
+		if ($editor = self::editorUri($origFile, $line)) {
 			$file = strtr($file, '\\', '/');
 			if (preg_match('#(^[a-z]:)?/.{1,50}$#i', $file, $m) && strlen($file) > strlen($m[0])) {
 				$file = '...' . $m[0];
@@ -46,7 +47,8 @@ class Helpers
 	public static function editorUri($file, $line = NULL)
 	{
 		if (Debugger::$editor && $file && is_file($file)) {
-			return strtr(Debugger::$editor, array('%file' => rawurlencode($file), '%line' => $line ? (int) $line : 1));
+			$file = strtr($file, Debugger::$editorMapping);
+			return strtr(Debugger::$editor, ['%file' => rawurlencode($file), '%line' => $line ? (int) $line : 1]);
 		}
 	}
 
@@ -54,19 +56,25 @@ class Helpers
 	public static function formatHtml($mask)
 	{
 		$args = func_get_args();
-		return preg_replace_callback('#%#', function () use (& $args, & $count) {
-			return htmlspecialchars($args[++$count], ENT_IGNORE | ENT_QUOTES, 'UTF-8');
+		return preg_replace_callback('#%#', function () use (&$args, &$count) {
+			return Helpers::escapeHtml($args[++$count]);
 		}, $mask);
 	}
 
 
-	public static function findTrace(array $trace, $method, & $index = NULL)
+	public static function escapeHtml($s)
+	{
+		return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+	}
+
+
+	public static function findTrace(array $trace, $method, &$index = NULL)
 	{
 		$m = explode('::', $method);
 		foreach ($trace as $i => $item) {
 			if (isset($item['function']) && $item['function'] === end($m)
 				&& isset($item['class']) === isset($m[1])
-				&& (!isset($item['class']) || $item['class'] === $m[0] || $m[0] === '*' || is_subclass_of($item['class'], $m[0]))
+				&& (!isset($item['class']) || $m[0] === '*' || is_a($item['class'], $m[0], TRUE))
 			) {
 				$index = $i;
 				return $item;
@@ -80,7 +88,7 @@ class Helpers
 	 */
 	public static function getClass($obj)
 	{
-		return current(explode("\x00", get_class($obj)));
+		return explode("\x00", get_class($obj))[0];
 	}
 
 
@@ -88,14 +96,14 @@ class Helpers
 	public static function fixStack($exception)
 	{
 		if (function_exists('xdebug_get_function_stack')) {
-			$stack = array();
+			$stack = [];
 			foreach (array_slice(array_reverse(xdebug_get_function_stack()), 2, -1) as $row) {
-				$frame = array(
+				$frame = [
 					'file' => $row['file'],
 					'line' => $row['line'],
 					'function' => isset($row['function']) ? $row['function'] : '*unknown*',
-					'args' => array(),
-				);
+					'args' => [],
+				];
 				if (!empty($row['class'])) {
 					$frame['type'] = isset($row['type']) && $row['type'] === 'dynamic' ? '->' : '::';
 					$frame['class'] = $row['class'];
@@ -113,18 +121,14 @@ class Helpers
 	/** @internal */
 	public static function fixEncoding($s)
 	{
-		if (PHP_VERSION_ID < 50400) {
-			return @iconv('UTF-16', 'UTF-8//IGNORE', iconv('UTF-8', 'UTF-16//IGNORE', $s)); // intentionally @
-		} else {
-			return htmlspecialchars_decode(htmlspecialchars($s, ENT_NOQUOTES | ENT_IGNORE, 'UTF-8'), ENT_NOQUOTES);
-		}
+		return htmlspecialchars_decode(htmlspecialchars($s, ENT_NOQUOTES | ENT_IGNORE, 'UTF-8'), ENT_NOQUOTES);
 	}
 
 
 	/** @internal */
 	public static function errorTypeToString($type)
 	{
-		$types = array(
+		$types = [
 			E_ERROR => 'Fatal Error',
 			E_USER_ERROR => 'User Error',
 			E_RECOVERABLE_ERROR => 'Recoverable Error',
@@ -140,7 +144,7 @@ class Helpers
 			E_STRICT => 'Strict standards',
 			E_DEPRECATED => 'Deprecated',
 			E_USER_DEPRECATED => 'User Deprecated',
-		);
+		];
 		return isset($types[$type]) ? $types[$type] : 'Unknown error';
 	}
 
@@ -153,7 +157,8 @@ class Helpers
 				. (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '')
 				. $_SERVER['REQUEST_URI'];
 		} else {
-			return empty($_SERVER['argv']) ? 'CLI' : 'CLI: ' . implode(' ', $_SERVER['argv']);
+			return 'CLI (PID: ' . getmypid() . ')'
+				. (empty($_SERVER['argv']) ? '' : ': ' . implode(' ', $_SERVER['argv']));
 		}
 	}
 
@@ -165,10 +170,9 @@ class Helpers
 		if (!$e instanceof \Error && !$e instanceof \ErrorException) {
 			// do nothing
 		} elseif (preg_match('#^Call to undefined function (\S+\\\\)?(\w+)\(#', $message, $m)) {
-			$funcs = get_defined_functions();
-			$funcs = array_merge($funcs['internal'], $funcs['user']);
+			$funcs = array_merge(get_defined_functions()['internal'], get_defined_functions()['user']);
 			$hint = self::getSuggestion($funcs, $m[1] . $m[2]) ?: self::getSuggestion($funcs, $m[2]);
-			$message .= ", did you mean $hint()?";
+			$message = "Call to undefined function $m[2](), did you mean $hint()?";
 
 		} elseif (preg_match('#^Call to undefined method (\S+)::(\w+)#', $message, $m)) {
 			$hint = self::getSuggestion(get_class_methods($m[1]), $m[2]);
@@ -216,6 +220,31 @@ class Helpers
 			}
 		}
 		return $best;
+	}
+
+
+	/** @internal */
+	public static function isHtmlMode()
+	{
+		return empty($_SERVER['HTTP_X_REQUESTED_WITH']) && empty($_SERVER['HTTP_X_TRACY_AJAX'])
+			&& PHP_SAPI !== 'cli'
+			&& !preg_match('#^Content-Type: (?!text/html)#im', implode("\n", headers_list()));
+	}
+
+
+	/** @internal */
+	public static function isAjax()
+	{
+		return isset($_SERVER['HTTP_X_TRACY_AJAX']) && preg_match('#^\w{10}\z#', $_SERVER['HTTP_X_TRACY_AJAX']);
+	}
+
+
+	/** @internal */
+	public static function getNonce()
+	{
+		return preg_match('#^Content-Security-Policy:.*\sscript-src\s+(?:[^;]+\s)?\'nonce-([\w+/]+=*)\'#mi', implode("\n", headers_list()), $m)
+			? $m[1]
+			: NULL;
 	}
 
 }

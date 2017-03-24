@@ -1,12 +1,18 @@
 <?php
 
+namespace App;
+
+use DateTimeImmutable;
+use Nette;
+use Nette\SmartObject;
+
+
 /**
  * Část modelu starající se o práci s komentáři
- *
- * @author   Jan Tvrdík
  */
-class CommentsService extends Nette\Object
+class CommentsService
 {
+	use SmartObject;
 
 	/** @var     Nette\Database\Connection */
 	private $db;
@@ -33,12 +39,12 @@ class CommentsService extends Nette\Object
 	 */
 	public function addComment($articleId, $author, $text)
 	{
-		$this->db->query('INSERT INTO `comments`', array(
+		$this->db->query('INSERT INTO `comments`', [
 			'articleId' => $articleId,
-			'date' => new DateTime('now'),
+			'date' => new DateTimeImmutable('now'),
 			'author' => $author,
-			'text' => $text
-		));
+			'text' => $text,
+		]);
 	}
 
 
@@ -70,5 +76,4 @@ class CommentsService extends Nette\Object
 			WHERE `articleId` = ?', $articleId
 		);
 	}
-
 }

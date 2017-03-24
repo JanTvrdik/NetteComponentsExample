@@ -13,8 +13,10 @@ use Nette;
 /**
  * Configurator compiling extension.
  */
-abstract class CompilerExtension extends Nette\Object
+abstract class CompilerExtension
 {
+	use Nette\SmartObject;
+
 	/** @var Compiler */
 	protected $compiler;
 
@@ -22,9 +24,12 @@ abstract class CompilerExtension extends Nette\Object
 	protected $name;
 
 	/** @var array */
-	protected $config = array();
+	protected $config = [];
 
 
+	/**
+	 * @return static
+	 */
 	public function setCompiler(Compiler $compiler, $name)
 	{
 		$this->compiler = $compiler;
@@ -33,6 +38,9 @@ abstract class CompilerExtension extends Nette\Object
 	}
 
 
+	/**
+	 * @return static
+	 */
 	public function setConfig(array $config)
 	{
 		$this->config = $config;

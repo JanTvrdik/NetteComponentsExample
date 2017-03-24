@@ -19,7 +19,7 @@ class ConstantsExtension extends Nette\DI\CompilerExtension
 	public function afterCompile(Nette\PhpGenerator\ClassType $class)
 	{
 		foreach ($this->getConfig() as $name => $value) {
-			$class->getMethod('initialize')->addBody('define(?, ?);', array($name, $value));
+			$class->getMethod('initialize')->addBody('define(?, ?);', [$name, $value]);
 		}
 	}
 

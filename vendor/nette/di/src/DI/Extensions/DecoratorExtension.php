@@ -15,11 +15,11 @@ use Nette;
  */
 class DecoratorExtension extends Nette\DI\CompilerExtension
 {
-	public $defaults = array(
-		'setup' => array(),
-		'tags' => array(),
+	public $defaults = [
+		'setup' => [],
+		'tags' => [],
 		'inject' => NULL,
-	);
+	];
 
 
 	public function beforeCompile()
@@ -29,6 +29,7 @@ class DecoratorExtension extends Nette\DI\CompilerExtension
 			if ($info['inject'] !== NULL) {
 				$info['tags'][InjectExtension::TAG_INJECT] = $info['inject'];
 			}
+			$info = Nette\DI\Helpers::filterArguments($info);
 			$this->addSetups($class, (array) $info['setup']);
 			$this->addTags($class, (array) $info['tags']);
 		}
@@ -58,10 +59,7 @@ class DecoratorExtension extends Nette\DI\CompilerExtension
 	{
 		$type = ltrim($type, '\\');
 		return array_filter($this->getContainerBuilder()->getDefinitions(), function ($def) use ($type) {
-			return $def->getClass() === $type || is_subclass_of($def->getClass(), $type)
-				|| (PHP_VERSION_ID < 50307 && array_key_exists($type, class_implements($def->getClass())))
-				|| $def->getImplement() === $type || is_subclass_of($def->getImplement(), $type)
-				|| (PHP_VERSION_ID < 50307 && $def->getImplement() && array_key_exists($type, class_implements($def->getImplement())));
+			return is_a($def->getClass(), $type, TRUE) || is_a($def->getImplement(), $type, TRUE);
 		});
 	}
 

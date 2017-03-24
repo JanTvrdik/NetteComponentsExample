@@ -8,7 +8,6 @@
 namespace Nette;
 
 use Nette;
-use Nette\Utils\ObjectMixin;
 
 
 /**
@@ -58,7 +57,7 @@ abstract class Object
 	 */
 	public static function getReflection()
 	{
-		$class = class_exists('Nette\Reflection\ClassType') ? 'Nette\Reflection\ClassType' : 'ReflectionClass';
+		$class = class_exists(Nette\Reflection\ClassType::class) ? Nette\Reflection\ClassType::class : 'ReflectionClass';
 		return new $class(get_called_class());
 	}
 
@@ -72,7 +71,7 @@ abstract class Object
 	 */
 	public function __call($name, $args)
 	{
-		return ObjectMixin::call($this, $name, $args);
+		return Nette\Utils\ObjectMixin::call($this, $name, $args);
 	}
 
 
@@ -85,7 +84,7 @@ abstract class Object
 	 */
 	public static function __callStatic($name, $args)
 	{
-		return ObjectMixin::callStatic(get_called_class(), $name, $args);
+		return Nette\Utils\ObjectMixin::callStatic(get_called_class(), $name, $args);
 	}
 
 
@@ -101,13 +100,12 @@ abstract class Object
 			$class = get_called_class();
 		} else {
 			list($class, $name) = explode('::', $name);
-			$rc = new \ReflectionClass($class);
-			$class = $rc->getName();
+			$class = (new \ReflectionClass($class))->getName();
 		}
 		if ($callback === NULL) {
-			return ObjectMixin::getExtensionMethod($class, $name);
+			return Nette\Utils\ObjectMixin::getExtensionMethod($class, $name);
 		} else {
-			ObjectMixin::setExtensionMethod($class, $name, $callback);
+			Nette\Utils\ObjectMixin::setExtensionMethod($class, $name, $callback);
 		}
 	}
 
@@ -120,7 +118,7 @@ abstract class Object
 	 */
 	public function &__get($name)
 	{
-		return ObjectMixin::get($this, $name);
+		return Nette\Utils\ObjectMixin::get($this, $name);
 	}
 
 
@@ -133,7 +131,7 @@ abstract class Object
 	 */
 	public function __set($name, $value)
 	{
-		ObjectMixin::set($this, $name, $value);
+		Nette\Utils\ObjectMixin::set($this, $name, $value);
 	}
 
 
@@ -144,7 +142,7 @@ abstract class Object
 	 */
 	public function __isset($name)
 	{
-		return ObjectMixin::has($this, $name);
+		return Nette\Utils\ObjectMixin::has($this, $name);
 	}
 
 
@@ -156,7 +154,7 @@ abstract class Object
 	 */
 	public function __unset($name)
 	{
-		ObjectMixin::remove($this, $name);
+		Nette\Utils\ObjectMixin::remove($this, $name);
 	}
 
 }

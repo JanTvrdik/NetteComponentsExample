@@ -13,8 +13,10 @@ use Nette;
 /**
  * Cached reflection of database structure.
  */
-class Structure extends Nette\Object implements IStructure
+class Structure implements IStructure
 {
+	use Nette\SmartObject;
+
 	/** @var Connection */
 	protected $connection;
 
@@ -64,6 +66,35 @@ class Structure extends Nette\Object implements IStructure
 	}
 
 
+	public function getPrimaryAutoincrementKey($table)
+	{
+		$primaryKey = $this->getPrimaryKey($table);
+		if (!$primaryKey) {
+			return NULL;
+		}
+
+		// Search for autoincrement key from multi primary key
+		if (is_array($primaryKey)) {
+			$keys = array_flip($primaryKey);
+			foreach ($this->getColumns($table) as $column) {
+				if (isset($keys[$column['name']]) && $column['autoincrement']) {
+					return $column['name'];
+				}
+			}
+			return NULL;
+		}
+
+		// Search for autoincrement key from simple primary key
+		foreach ($this->getColumns($table) as $column) {
+			if ($column['name'] == $primaryKey) {
+				return $column['autoincrement'] ? $column['name'] : NULL;
+			}
+		}
+
+		return NULL;
+	}
+
+
 	public function getPrimaryKeySequence($table)
 	{
 		$this->needStructure();
@@ -73,13 +104,14 @@ class Structure extends Nette\Object implements IStructure
 			return NULL;
 		}
 
-		$primary = $this->getPrimaryKey($table);
-		if (!$primary || is_array($primary)) {
+		$autoincrementPrimaryKeyName = $this->getPrimaryAutoincrementKey($table);
+		if (!$autoincrementPrimaryKeyName) {
 			return NULL;
 		}
 
+		// Search for sequence from simple primary key
 		foreach ($this->structure['columns'][$table] as $columnMeta) {
-			if ($columnMeta['name'] === $primary) {
+			if ($columnMeta['name'] === $autoincrementPrimaryKeyName) {
 				return isset($columnMeta['vendor']['sequence']) ? $columnMeta['vendor']['sequence'] : NULL;
 			}
 		}
@@ -105,7 +137,7 @@ class Structure extends Nette\Object implements IStructure
 
 		} else {
 			if (!isset($this->structure['hasMany'][$table])) {
-				return array();
+				return [];
 			}
 			return $this->structure['hasMany'][$table];
 		}
@@ -126,7 +158,7 @@ class Structure extends Nette\Object implements IStructure
 
 		} else {
 			if (!isset($this->structure['belongsTo'][$table])) {
-				return array();
+				return [];
 			}
 			return $this->structure['belongsTo'][$table];
 		}
@@ -152,7 +184,7 @@ class Structure extends Nette\Object implements IStructure
 			return;
 		}
 
-		$this->structure = $this->cache->load('structure', array($this, 'loadStructure'));
+		$this->structure = $this->cache->load('structure', [$this, 'loadStructure']);
 	}
 
 
@@ -163,7 +195,7 @@ class Structure extends Nette\Object implements IStructure
 	{
 		$driver = $this->connection->getSupplementalDriver();
 
-		$structure = array();
+		$structure = [];
 		$structure['tables'] = $driver->getTables();
 
 		foreach ($structure['tables'] as $tablePair) {
@@ -183,7 +215,7 @@ class Structure extends Nette\Object implements IStructure
 		}
 
 		if (isset($structure['hasMany'])) {
-			foreach ($structure['hasMany'] as & $table) {
+			foreach ($structure['hasMany'] as &$table) {
 				uksort($table, function ($a, $b) {
 					return strlen($a) - strlen($b);
 				});
@@ -198,7 +230,7 @@ class Structure extends Nette\Object implements IStructure
 
 	protected function analyzePrimaryKey(array $columns)
 	{
-		$primary = array();
+		$primary = [];
 		foreach ($columns as $column) {
 			if ($column['primary']) {
 				$primary[] = $column['name'];
@@ -215,15 +247,16 @@ class Structure extends Nette\Object implements IStructure
 	}
 
 
-	protected function analyzeForeignKeys(& $structure, $table)
+	protected function analyzeForeignKeys(&$structure, $table)
 	{
+		$lowerTable = strtolower($table);
 		foreach ($this->connection->getSupplementalDriver()->getForeignKeys($table) as $row) {
-			$structure['belongsTo'][strtolower($table)][$row['local']] = $row['table'];
+			$structure['belongsTo'][$lowerTable][$row['local']] = $row['table'];
 			$structure['hasMany'][strtolower($row['table'])][$table][] = $row['local'];
 		}
 
-		if (isset($structure['belongsTo'][$table])) {
-			uksort($structure['belongsTo'][$table], function ($a, $b) {
+		if (isset($structure['belongsTo'][$lowerTable])) {
+			uksort($structure['belongsTo'][$lowerTable], function ($a, $b) {
 				return strlen($a) - strlen($b);
 			});
 		}

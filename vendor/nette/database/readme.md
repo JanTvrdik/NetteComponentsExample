@@ -2,8 +2,10 @@ Nette Database
 ==============
 
 [![Downloads this Month](https://img.shields.io/packagist/dm/nette/database.svg)](https://packagist.org/packages/nette/database)
-[![Build Status](https://travis-ci.org/nette/database.svg?branch=v2.3)](https://travis-ci.org/nette/database)
-[![Build Status Windows](https://ci.appveyor.com/api/projects/status/github/nette/database?branch=v2.3&svg=true)](https://ci.appveyor.com/project/dg/database/branch/v2.3)
+[![Build Status](https://travis-ci.org/nette/database.svg?branch=master)](https://travis-ci.org/nette/database)
+[![Build Status Windows](https://ci.appveyor.com/api/projects/status/github/nette/database?branch=master&svg=true)](https://ci.appveyor.com/project/dg/database/branch/master)
+[![Latest Stable Version](https://poser.pugx.org/nette/database/v/stable)](https://github.com/nette/database/releases)
+[![License](https://img.shields.io/badge/license-New%20BSD-blue.svg)](https://github.com/nette/database/blob/master/license.md)
 
 Nette provides a powerful layer for accessing your database easily.
 
@@ -12,7 +14,7 @@ Nette provides a powerful layer for accessing your database easily.
 - uses efficient queries and does not transmit unnecessary data
 
 The `Nette\Database\Connection` class is a wrapper around the PDO and represents a connection to the database.
-The core functionality is provided by `Nette\Database\Context`. `Nette\Database\Table` layer orivudes an enhanced layer for table querying.
+The core functionality is provided by `Nette\Database\Context`. `Nette\Database\Table` layer provides an enhanced layer for table querying.
 
 To create a new database connection just create a new instance of [api:Nette\Database\Connection] class:
 
@@ -25,7 +27,7 @@ All connections are created as "lazy" by default. This means the connection is e
 Queries
 --------
 
-The core functionality is provided by `Nette\Database\Context`. Database\Context allows you to easily query your database by calling `query` method:
+The core functionality is provided by `Nette\Database\Connection`. Connection allows you to easily query your database by calling `query` method:
 
 ```php
 $database = new Nette\Database\Context($connection);

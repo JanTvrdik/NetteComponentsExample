@@ -37,7 +37,7 @@ class Logger implements ILogger
 		$this->directory = $directory;
 		$this->email = $email;
 		$this->blueScreen = $blueScreen;
-		$this->mailer = array($this, 'defaultMailer');
+		$this->mailer = [$this, 'defaultMailer'];
 	}
 
 
@@ -69,7 +69,7 @@ class Logger implements ILogger
 			$this->logException($message, $exceptionFile);
 		}
 
-		if (in_array($priority, array(self::ERROR, self::EXCEPTION, self::CRITICAL), TRUE)) {
+		if (in_array($priority, [self::ERROR, self::EXCEPTION, self::CRITICAL], TRUE)) {
 			$this->sendEmail($message);
 		}
 
@@ -87,11 +87,11 @@ class Logger implements ILogger
 			while ($message) {
 				$tmp[] = ($message instanceof \ErrorException
 					? Helpers::errorTypeToString($message->getSeverity()) . ': ' . $message->getMessage()
-					: Helpers::getClass($message) . ': ' . $message->getMessage()
+					: Helpers::getClass($message) . ': ' . $message->getMessage() . ($message->getCode() ? ' #' . $message->getCode() : '')
 				) . ' in ' . $message->getFile() . ':' . $message->getLine();
 				$message = $message->getPrevious();
 			}
-			$message = implode($tmp, "\ncaused by ");
+			$message = implode("\ncaused by ", $tmp);
 
 		} elseif (!is_string($message)) {
 			$message = Dumper::toText($message);
@@ -107,12 +107,12 @@ class Logger implements ILogger
 	 */
 	protected function formatLogLine($message, $exceptionFile = NULL)
 	{
-		return implode(' ', array(
+		return implode(' ', [
 			@date('[Y-m-d H-i-s]'), // @ timezone may not be set
 			preg_replace('#\s*\r?\n\s*#', ' ', $this->formatMessage($message)),
 			' @  ' . Helpers::getSource(),
 			$exceptionFile ? ' @@  ' . basename($exceptionFile) : NULL,
-		));
+		]);
 	}
 
 
@@ -122,10 +122,17 @@ class Logger implements ILogger
 	 */
 	public function getExceptionFile($exception)
 	{
+		while ($exception) {
+			$data[] = [
+				$exception->getMessage(), $exception->getCode(), $exception->getFile(), $exception->getLine(),
+				array_map(function ($item) { unset($item['args']); return $item; }, $exception->getTrace()),
+			];
+			$exception = $exception->getPrevious();
+		}
+		$hash = substr(md5(serialize($data)), 0, 10);
 		$dir = strtr($this->directory . '/', '\\/', DIRECTORY_SEPARATOR . DIRECTORY_SEPARATOR);
-		$hash = substr(md5(preg_replace('~(Resource id #)\d+~', '$1', $exception)), 0, 10);
 		foreach (new \DirectoryIterator($this->directory) as $file) {
-			if (strpos($file, $hash)) {
+			if (strpos($file->getBasename(), $hash)) {
 				return $dir . $file;
 			}
 		}
@@ -141,15 +148,8 @@ class Logger implements ILogger
 	protected function logException($exception, $file = NULL)
 	{
 		$file = $file ?: $this->getExceptionFile($exception);
-		if ($handle = @fopen($file, 'x')) { // @ file may already exist
-			ob_start(); // double buffer prevents sending HTTP headers in some PHP
-			ob_start(function ($buffer) use ($handle) { fwrite($handle, $buffer); }, 4096);
-			$bs = $this->blueScreen ?: new BlueScreen;
-			$bs->render($exception);
-			ob_end_flush();
-			ob_end_clean();
-			fclose($handle);
-		}
+		$bs = $this->blueScreen ?: new BlueScreen;
+		$bs->renderToFile($exception, $file);
 		return $file;
 	}
 
@@ -184,18 +184,18 @@ class Logger implements ILogger
 	{
 		$host = preg_replace('#[^\w.-]+#', '', isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : php_uname('n'));
 		$parts = str_replace(
-			array("\r\n", "\n"),
-			array("\n", PHP_EOL),
-			array(
-				'headers' => implode("\n", array(
+			["\r\n", "\n"],
+			["\n", PHP_EOL],
+			[
+				'headers' => implode("\n", [
 					'From: ' . ($this->fromEmail ?: "noreply@$host"),
 					'X-Mailer: Tracy',
 					'Content-Type: text/plain; charset=UTF-8',
 					'Content-Transfer-Encoding: 8bit',
-				)) . "\n",
+				]) . "\n",
 				'subject' => "PHP: An error occurred on the server $host",
 				'body' => $this->formatMessage($message) . "\n\nsource: " . Helpers::getSource(),
-			)
+			]
 		);
 
 		mail($email, $parts['subject'], $parts['body'], $parts['headers']);

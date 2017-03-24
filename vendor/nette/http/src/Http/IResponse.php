@@ -23,6 +23,7 @@ interface IResponse
 	const
 		S100_CONTINUE = 100,
 		S101_SWITCHING_PROTOCOLS = 101,
+		S102_PROCESSING = 102,
 		S200_OK = 200,
 		S201_CREATED = 201,
 		S202_ACCEPTED = 202,
@@ -30,6 +31,9 @@ interface IResponse
 		S204_NO_CONTENT = 204,
 		S205_RESET_CONTENT = 205,
 		S206_PARTIAL_CONTENT = 206,
+		S207_MULTI_STATUS = 207,
+		S208_ALREADY_REPORTED = 208,
+		S226_IM_USED = 226,
 		S300_MULTIPLE_CHOICES = 300,
 		S301_MOVED_PERMANENTLY = 301,
 		S302_FOUND = 302,
@@ -38,6 +42,7 @@ interface IResponse
 		S304_NOT_MODIFIED = 304,
 		S305_USE_PROXY = 305,
 		S307_TEMPORARY_REDIRECT = 307,
+		S308_PERMANENT_REDIRECT = 308,
 		S400_BAD_REQUEST = 400,
 		S401_UNAUTHORIZED = 401,
 		S402_PAYMENT_REQUIRED = 402,
@@ -56,18 +61,31 @@ interface IResponse
 		S415_UNSUPPORTED_MEDIA_TYPE = 415,
 		S416_REQUESTED_RANGE_NOT_SATISFIABLE = 416,
 		S417_EXPECTATION_FAILED = 417,
+		S421_MISDIRECTED_REQUEST = 421,
+		S422_UNPROCESSABLE_ENTITY = 422,
+		S423_LOCKED = 423,
+		S424_FAILED_DEPENDENCY = 424,
 		S426_UPGRADE_REQUIRED = 426,
+		S428_PRECONDITION_REQUIRED = 428,
+		S429_TOO_MANY_REQUESTS = 429,
+		S431_REQUEST_HEADER_FIELDS_TOO_LARGE = 431,
+		S451_UNAVAILABLE_FOR_LEGAL_REASONS = 451,
 		S500_INTERNAL_SERVER_ERROR = 500,
 		S501_NOT_IMPLEMENTED = 501,
 		S502_BAD_GATEWAY = 502,
 		S503_SERVICE_UNAVAILABLE = 503,
 		S504_GATEWAY_TIMEOUT = 504,
-		S505_HTTP_VERSION_NOT_SUPPORTED = 505;
+		S505_HTTP_VERSION_NOT_SUPPORTED = 505,
+		S506_VARIANT_ALSO_NEGOTIATES = 506,
+		S507_INSUFFICIENT_STORAGE = 507,
+		S508_LOOP_DETECTED = 508,
+		S510_NOT_EXTENDED = 510,
+		S511_NETWORK_AUTHENTICATION_REQUIRED = 511;
 
 	/**
 	 * Sets HTTP response code.
 	 * @param  int
-	 * @return void
+	 * @return static
 	 */
 	function setCode($code);
 
@@ -81,7 +99,7 @@ interface IResponse
 	 * Sends a HTTP header and replaces a previous one.
 	 * @param  string  header name
 	 * @param  string  header value
-	 * @return void
+	 * @return static
 	 */
 	function setHeader($name, $value);
 
@@ -89,7 +107,7 @@ interface IResponse
 	 * Adds HTTP header.
 	 * @param  string  header name
 	 * @param  string  header value
-	 * @return void
+	 * @return static
 	 */
 	function addHeader($name, $value);
 
@@ -97,7 +115,7 @@ interface IResponse
 	 * Sends a Content-type HTTP header.
 	 * @param  string  mime-type
 	 * @param  string  charset
-	 * @return void
+	 * @return static
 	 */
 	function setContentType($type, $charset = NULL);
 
@@ -111,8 +129,8 @@ interface IResponse
 
 	/**
 	 * Sets the number of seconds before a page cached on a browser expires.
-	 * @param  string|int|\DateTime  time, value 0 means "until the browser is closed"
-	 * @return void
+	 * @param  string|int|\DateTimeInterface  time, value 0 means "until the browser is closed"
+	 * @return static
 	 */
 	function setExpiration($seconds);
 
@@ -125,8 +143,8 @@ interface IResponse
 	/**
 	 * Returns value of an HTTP header.
 	 * @param  string
-	 * @param  mixed
-	 * @return mixed
+	 * @param  string|NULL
+	 * @return string|NULL
 	 */
 	function getHeader($header, $default = NULL);
 
@@ -140,12 +158,12 @@ interface IResponse
 	 * Sends a cookie.
 	 * @param  string name of the cookie
 	 * @param  string value
-	 * @param  mixed expiration as unix timestamp or number of seconds; Value 0 means "until the browser is closed"
+	 * @param  string|int|\DateTimeInterface  time, value 0 means "until the browser is closed"
 	 * @param  string
 	 * @param  string
 	 * @param  bool
 	 * @param  bool
-	 * @return void
+	 * @return static
 	 */
 	function setCookie($name, $value, $expire, $path = NULL, $domain = NULL, $secure = NULL, $httpOnly = NULL);
 

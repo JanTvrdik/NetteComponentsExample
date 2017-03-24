@@ -11,27 +11,20 @@ use Nette;
 
 
 /**
- * Method or function description.
+ * Class method.
+ *
+ * @property string|FALSE $body
  */
-class Method extends Nette\Object
+class Method
 {
-	/** @var string|NULL */
-	private $name;
-
-	/** @var array of name => Parameter */
-	private $parameters = array();
-
-	/** @var array of name => bool */
-	private $uses = array();
-
-	/** @var string|FALSE */
-	private $body = '';
+	use Nette\SmartObject;
+	use Traits\FunctionLike;
+	use Traits\NameAware;
+	use Traits\VisibilityAware;
+	use Traits\CommentAware;
 
 	/** @var bool */
 	private $static = FALSE;
-
-	/** @var string|NULL  public|protected|private */
-	private $visibility;
 
 	/** @var bool */
 	private $final = FALSE;
@@ -39,62 +32,33 @@ class Method extends Nette\Object
 	/** @var bool */
 	private $abstract = FALSE;
 
-	/** @var bool */
-	private $returnReference = FALSE;
-
-	/** @var bool */
-	private $variadic = FALSE;
-
-	/** @var string[] */
-	private $documents = array();
-
-	/** @var PhpNamespace|NULL */
-	private $namespace;
-
-	/** @var string|NULL */
-	private $returnType;
-
 
 	/**
-	 * @return self
+	 * @param  callable
+	 * @return static
 	 */
-	public static function from($from)
+	public static function from($method)
 	{
-		if (is_string($from) && strpos($from, '::')) {
-			$from = new \ReflectionMethod($from);
-		} elseif (is_array($from)) {
-			$from = new \ReflectionMethod($from[0], $from[1]);
-		} elseif (!$from instanceof \ReflectionFunctionAbstract) {
-			$from = new \ReflectionFunction($from);
+		$method = $method instanceof \ReflectionFunctionAbstract ? $method : Nette\Utils\Callback::toReflection($method);
+		if ($method instanceof \ReflectionFunction) {
+			trigger_error('For global functions or closures use Nette\PhpGenerator\GlobalFunction or Nette\PhpGenerator\Closure.', E_USER_DEPRECATED);
+			return (new Factory)->fromFunctionReflection($method);
 		}
-
-		$method = new static($from->isClosure() ? NULL : $from->getName());
-		foreach ($from->getParameters() as $param) {
-			$method->parameters[$param->getName()] = Parameter::from($param);
-		}
-		if ($from instanceof \ReflectionMethod) {
-			$method->static = $from->isStatic();
-			$method->visibility = $from->isPrivate() ? 'private' : ($from->isProtected() ? 'protected' : NULL);
-			$method->final = $from->isFinal();
-			$method->abstract = $from->isAbstract() && !$from->getDeclaringClass()->isInterface();
-			$method->body = $from->isAbstract() ? FALSE : '';
-		}
-		$method->returnReference = $from->returnsReference();
-		$method->variadic = PHP_VERSION_ID >= 50600 && $from->isVariadic();
-		$method->documents = $from->getDocComment() ? array(preg_replace('#^\s*\* ?#m', '', trim($from->getDocComment(), "/* \r\n\t"))) : array();
-		if (PHP_VERSION_ID >= 70000 && $from->hasReturnType()) {
-			$method->returnType = (string) $from->getReturnType();
-		}
-		return $method;
+		return (new Factory)->fromMethodReflection($method);
 	}
 
 
 	/**
-	 * @param  string|NULL
+	 * @param  string
 	 */
-	public function __construct($name = NULL)
+	public function __construct($name)
 	{
-		$this->setName($name);
+		if ($name === NULL) {
+			throw new Nette\DeprecatedException('For closures use Nette\PhpGenerator\Closure instead of Nette\PhpGenerator\Method.');
+		} elseif (!Helpers::isIdentifier($name)) {
+			throw new Nette\InvalidArgumentException("Value '$name' is not valid name.");
+		}
+		$this->name = $name;
 	}
 
 
@@ -103,137 +67,35 @@ class Method extends Nette\Object
 	 */
 	public function __toString()
 	{
-		$parameters = array();
-		foreach ($this->parameters as $param) {
-			$variadic = $this->variadic && $param === end($this->parameters);
-			$hint = $param->getTypeHint();
-			$parameters[] = ($hint ? ($this->namespace ? $this->namespace->unresolveName($hint) : $hint) . ' ' : '')
-				. ($param->isReference() ? '&' : '')
-				. ($variadic ? '...' : '')
-				. '$' . $param->getName()
-				. ($param->isOptional() && !$variadic ? ' = ' . Helpers::dump($param->defaultValue) : '');
-		}
-		$uses = array();
-		foreach ($this->uses as $param) {
-			$uses[] = ($param->isReference() ? '&' : '') . '$' . $param->getName();
-		}
-
-		return ($this->documents ? str_replace("\n", "\n * ", "/**\n" . implode("\n", $this->documents)) . "\n */\n" : '')
+		return Helpers::formatDocComment($this->comment . "\n")
 			. ($this->abstract ? 'abstract ' : '')
 			. ($this->final ? 'final ' : '')
 			. ($this->visibility ? $this->visibility . ' ' : '')
 			. ($this->static ? 'static ' : '')
-			. 'function'
-			. ($this->returnReference ? ' &' : '')
-			. ' ' . $this->name
-			. '(' . implode(', ', $parameters) . ')'
-			. ($this->uses ? ' use (' . implode(', ', $uses) . ')' : '')
-			. ($this->returnType ? ': ' . ($this->namespace ? $this->namespace->unresolveName($this->returnType) : $this->returnType) : '')
-			. ($this->abstract || $this->body === FALSE ? ';'
-				: ($this->name ? "\n" : ' ') . "{\n" . Nette\Utils\Strings::indent(ltrim(rtrim($this->body) . "\n"), 1) . '}');
+			. 'function '
+			. ($this->returnReference ? '&' : '')
+			. $this->name
+			. $this->parametersToString()
+			. $this->returnTypeToString()
+			. ($this->abstract || $this->body === FALSE
+				? ';'
+				: "\n{\n" . Nette\Utils\Strings::indent(ltrim(rtrim($this->body) . "\n"), 1) . '}');
 	}
 
 
 	/**
-	 * @param  string|NULL
-	 * @return self
+	 * @param  string|FALSE
+	 * @return static
 	 */
-	public function setName($name)
+	public function setBody($code, array $args = NULL)
 	{
-		$this->name = $name ? (string) $name : NULL;
+		$this->body = $args === NULL ? $code : Helpers::formatArgs($code, $args);
 		return $this;
 	}
 
 
 	/**
-	 * @return string|NULL
-	 */
-	public function getName()
-	{
-		return $this->name;
-	}
-
-
-	/**
-	 * @param  Parameter[]
-	 * @return self
-	 */
-	public function setParameters(array $val)
-	{
-		$this->parameters = array();
-		foreach ($val as $v) {
-			if (!$v instanceof Parameter) {
-				throw new Nette\InvalidArgumentException('Argument must be Nette\PhpGenerator\Parameter[].');
-			}
-			$this->parameters[$v->getName()] = $v;
-		}
-		return $this;
-	}
-
-
-	/**
-	 * @return Parameter[]
-	 */
-	public function getParameters()
-	{
-		return $this->parameters;
-	}
-
-
-	/**
-	 * @param  string  without $
-	 * @return Parameter
-	 */
-	public function addParameter($name, $defaultValue = NULL)
-	{
-		$param = new Parameter($name);
-		if (func_num_args() > 1) {
-			$param->setOptional(TRUE)->setDefaultValue($defaultValue);
-		}
-		return $this->parameters[$name] = $param;
-	}
-
-
-	/**
-	 * @return self
-	 */
-	public function setUses(array $val)
-	{
-		$this->uses = $val;
-		return $this;
-	}
-
-
-	/**
-	 * @return array
-	 */
-	public function getUses()
-	{
-		return $this->uses;
-	}
-
-
-	/**
-	 * @return Parameter
-	 */
-	public function addUse($name)
-	{
-		return $this->uses[] = new Parameter($name);
-	}
-
-
-	/**
-	 * @return self
-	 */
-	public function setBody($statement, array $args = NULL)
-	{
-		$this->body = func_num_args() > 1 ? Helpers::formatArgs($statement, $args) : $statement;
-		return $this;
-	}
-
-
-	/**
-	 * @return string
+	 * @return string|FALSE
 	 */
 	public function getBody()
 	{
@@ -242,22 +104,12 @@ class Method extends Nette\Object
 
 
 	/**
-	 * @return self
-	 */
-	public function addBody($statement, array $args = NULL)
-	{
-		$this->body .= (func_num_args() > 1 ? Helpers::formatArgs($statement, $args) : $statement) . "\n";
-		return $this;
-	}
-
-
-	/**
 	 * @param  bool
-	 * @return self
+	 * @return static
 	 */
-	public function setStatic($val)
+	public function setStatic($state = TRUE)
 	{
-		$this->static = (bool) $val;
+		$this->static = (bool) $state;
 		return $this;
 	}
 
@@ -272,35 +124,12 @@ class Method extends Nette\Object
 
 
 	/**
-	 * @param  string|NULL  public|protected|private
-	 * @return self
-	 */
-	public function setVisibility($val)
-	{
-		if (!in_array($val, array('public', 'protected', 'private', NULL), TRUE)) {
-			throw new Nette\InvalidArgumentException('Argument must be public|protected|private|NULL.');
-		}
-		$this->visibility = $val ? (string) $val : NULL;
-		return $this;
-	}
-
-
-	/**
-	 * @return string|NULL
-	 */
-	public function getVisibility()
-	{
-		return $this->visibility;
-	}
-
-
-	/**
 	 * @param  bool
-	 * @return self
+	 * @return static
 	 */
-	public function setFinal($val)
+	public function setFinal($state = TRUE)
 	{
-		$this->final = (bool) $val;
+		$this->final = (bool) $state;
 		return $this;
 	}
 
@@ -316,11 +145,11 @@ class Method extends Nette\Object
 
 	/**
 	 * @param  bool
-	 * @return self
+	 * @return static
 	 */
-	public function setAbstract($val)
+	public function setAbstract($state = TRUE)
 	{
-		$this->abstract = (bool) $val;
+		$this->abstract = (bool) $state;
 		return $this;
 	}
 
@@ -331,107 +160,6 @@ class Method extends Nette\Object
 	public function isAbstract()
 	{
 		return $this->abstract;
-	}
-
-
-	/**
-	 * @param  bool
-	 * @return self
-	 */
-	public function setReturnReference($val)
-	{
-		$this->returnReference = (bool) $val;
-		return $this;
-	}
-
-
-	/**
-	 * @return bool
-	 */
-	public function getReturnReference()
-	{
-		return $this->returnReference;
-	}
-
-
-	/**
-	 * @param  bool
-	 * @return self
-	 */
-	public function setVariadic($val)
-	{
-		$this->variadic = (bool) $val;
-		return $this;
-	}
-
-
-	/**
-	 * @return bool
-	 */
-	public function isVariadic()
-	{
-		return $this->variadic;
-	}
-
-
-	/**
-	 * @param  string[]
-	 * @return self
-	 */
-	public function setDocuments(array $val)
-	{
-		$this->documents = $val;
-		return $this;
-	}
-
-
-	/**
-	 * @return string[]
-	 */
-	public function getDocuments()
-	{
-		return $this->documents;
-	}
-
-
-	/**
-	 * @param  string
-	 * @return self
-	 */
-	public function addDocument($val)
-	{
-		$this->documents[] = (string) $val;
-		return $this;
-	}
-
-
-	/**
-	 * @return self
-	 */
-	public function setNamespace(PhpNamespace $val = NULL)
-	{
-		$this->namespace = $val;
-		return $this;
-	}
-
-
-	/**
-	 * @param  string|NULL
-	 * @return self
-	 */
-	public function setReturnType($val)
-	{
-		$this->returnType = $val ? (string) $val : NULL;
-		return $this;
-	}
-
-
-	/**
-	 * @return string|NULL
-	 */
-	public function getReturnType()
-	{
-		return $this->returnType;
 	}
 
 }

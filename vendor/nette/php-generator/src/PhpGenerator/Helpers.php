@@ -15,8 +15,11 @@ use Nette;
  */
 class Helpers
 {
+	use Nette\StaticClass;
+
 	const PHP_IDENT = '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*';
 	const MAX_DEPTH = 50;
+	const WRAP_LENGTH = 70;
 
 
 	/**
@@ -29,14 +32,17 @@ class Helpers
 	}
 
 
-	private static function _dump(& $var, $level = 0)
+	private static function _dump(&$var, $level = 0)
 	{
 		if ($var instanceof PhpLiteral) {
 			return (string) $var;
 
 		} elseif (is_float($var)) {
-			$var = var_export($var, TRUE);
-			return strpos($var, '.') === FALSE ? $var . '.0' : $var;
+			if (is_finite($var)) {
+				$var = var_export($var, TRUE);
+				return strpos($var, '.') === FALSE ? $var . '.0' : $var; // workaround for PHP < 7.0.2
+			}
+			return str_replace('.0', '', var_export($var, TRUE)); // workaround for PHP 7.0.2
 
 		} elseif (is_bool($var)) {
 			return $var ? 'TRUE' : 'FALSE';
@@ -77,7 +83,7 @@ class Helpers
 				$outAlt = "\n$space";
 				$var[$marker] = TRUE;
 				$counter = 0;
-				foreach ($var as $k => & $v) {
+				foreach ($var as $k => &$v) {
 					if ($k !== $marker) {
 						$item = ($k === $counter ? '' : self::_dump($k, $level + 1) . ' => ') . self::_dump($v, $level + 1);
 						$counter = is_int($k) ? max($k + 1, $counter) : $counter;
@@ -87,7 +93,7 @@ class Helpers
 				}
 				unset($var[$marker]);
 			}
-			return 'array(' . (strpos($out, "\n") === FALSE && strlen($out) < 40 ? $out : $outAlt) . ')';
+			return '[' . (strpos($out, "\n") === FALSE && strlen($out) < self::WRAP_LENGTH ? $out : $outAlt) . ']';
 
 		} elseif ($var instanceof \Serializable) {
 			$var = serialize($var);
@@ -97,14 +103,18 @@ class Helpers
 			throw new Nette\InvalidArgumentException('Cannot dump closure.');
 
 		} elseif (is_object($var)) {
-			if (PHP_VERSION_ID >= 70000 && ($rc = new \ReflectionObject($var)) && $rc->isAnonymous()) {
+			$class = get_class($var);
+			if (PHP_VERSION_ID >= 70000 && (new \ReflectionObject($var))->isAnonymous()) {
 				throw new Nette\InvalidArgumentException('Cannot dump anonymous class.');
+
+			} elseif (in_array($class, ['DateTime', 'DateTimeImmutable'], TRUE)) {
+				return self::formatArgs("new $class(?, new DateTimeZone(?))", [$var->format('Y-m-d H:i:s.u'), $var->getTimeZone()->getName()]);
 			}
+
 			$arr = (array) $var;
 			$space = str_repeat("\t", $level);
-			$class = get_class($var);
 
-			static $list = array();
+			static $list = [];
 			if ($level > self::MAX_DEPTH || in_array($var, $list, TRUE)) {
 				throw new Nette\InvalidArgumentException('Nesting level too deep or recursive dependency.');
 
@@ -116,7 +126,7 @@ class Helpers
 						$props[$v] = $props["\x00*\x00$v"] = $props["\x00$class\x00$v"] = TRUE;
 					}
 				}
-				foreach ($arr as $k => & $v) {
+				foreach ($arr as $k => &$v) {
 					if (!isset($props) || isset($props[$k])) {
 						$out .= "$space\t" . self::_dump($k, $level + 1) . ' => ' . self::_dump($v, $level + 1) . ",\n";
 					}
@@ -125,8 +135,8 @@ class Helpers
 				$out .= $space;
 			}
 			return $class === 'stdClass'
-				? "(object) array($out)"
-				: __CLASS__ . "::createObject('$class', array($out))";
+				? "(object) [$out]"
+				: __CLASS__ . "::createObject('$class', [$out])";
 
 		} elseif (is_resource($var)) {
 			throw new Nette\InvalidArgumentException('Cannot dump resource.');
@@ -139,49 +149,48 @@ class Helpers
 
 	/**
 	 * Generates PHP statement.
+	 * @param  string
 	 * @return string
 	 */
-	public static function format($statement)
+	public static function format($statement, ...$args)
 	{
-		$args = func_get_args();
-		return self::formatArgs(array_shift($args), $args);
+		return self::formatArgs($statement, $args);
 	}
 
 
 	/**
 	 * Generates PHP statement.
+	 * @param  string
 	 * @return string
 	 */
 	public static function formatArgs($statement, array $args)
 	{
-		$a = strpos($statement, '?');
-		while ($a !== FALSE) {
-			if (!$args) {
+		$tokens = preg_split('#(\.\.\.\?|\$\?|->\?|::\?|\\\\\?|\?\*|\?)#', $statement, -1, PREG_SPLIT_DELIM_CAPTURE);
+		$res = '';
+		foreach ($tokens as $n => $token) {
+			if ($n % 2 === 0) {
+				$res .= $token;
+			} elseif ($token === '\\?') {
+				$res .= '?';
+			} elseif (!$args) {
 				throw new Nette\InvalidArgumentException('Insufficient number of arguments.');
-			}
-			$arg = array_shift($args);
-			if (substr($statement, $a + 1, 1) === '*') { // ?*
+			} elseif ($token === '?') {
+				$res .= self::dump(array_shift($args));
+			} elseif ($token === '...?' || $token === '?*') {
+				$arg = array_shift($args);
 				if (!is_array($arg)) {
 					throw new Nette\InvalidArgumentException('Argument must be an array.');
 				}
-				$s = substr($statement, 0, $a);
 				$sep = '';
 				foreach ($arg as $tmp) {
-					$s .= $sep . self::dump($tmp);
-					$sep = strlen($s) - strrpos($s, "\n") > 100 ? ",\n\t" : ', ';
+					$res .= $sep . self::dump($tmp);
+					$sep = strlen($res) - strrpos($res, "\n") > self::WRAP_LENGTH ? ",\n\t" : ', ';
 				}
-				$statement = $s . substr($statement, $a + 2);
-				$a = strlen($s);
-
-			} else {
-				$arg = substr($statement, $a - 1, 1) === '$' || in_array(substr($statement, $a - 2, 2), array('->', '::'), TRUE)
-					? self::formatMember($arg) : self::_dump($arg);
-				$statement = substr_replace($statement, $arg, $a, 1);
-				$a += strlen($arg);
+			} else { // $  ->  ::
+				$res .= substr($token, 0, -1) . self::formatMember(array_shift($args));
 			}
-			$a = strpos($statement, '?', $a);
 		}
-		return $statement;
+		return $res;
 	}
 
 
@@ -198,6 +207,32 @@ class Helpers
 
 
 	/**
+	 * @param  string
+	 * @return string
+	 */
+	public static function formatDocComment($content)
+	{
+		if (($s = trim($content)) === '') {
+			return '';
+		} elseif (strpos($content, "\n") === FALSE) {
+			return "/** $s */\n";
+		} else {
+			return str_replace("\n", "\n * ", "/**\n$s") . "\n */\n";
+		}
+	}
+
+
+	/**
+	 * @param  string
+	 * @return string
+	 */
+	public static function unformatDocComment($comment)
+	{
+		return preg_replace('#^\s*\* ?#m', '', trim(trim(trim($comment), '/*')));
+	}
+
+
+	/**
 	 * @return bool
 	 */
 	public static function isIdentifier($value)
@@ -206,7 +241,21 @@ class Helpers
 	}
 
 
-	/** @internal */
+	/**
+	 * @return bool
+	 */
+	public static function isNamespaceIdentifier($value, $allowLeadingSlash = FALSE)
+	{
+		$re = '#^' . ($allowLeadingSlash ? '\\\\?' : '') . Helpers::PHP_IDENT . '(\\\\' . Helpers::PHP_IDENT . ')*\z#';
+		return is_string($value) && preg_match($re, $value);
+	}
+
+
+	/**
+	 * @param  string
+	 * @return object
+	 * @internal
+	 */
 	public static function createObject($class, array $props)
 	{
 		return unserialize('O' . substr(serialize((string) $class), 1, -1) . substr(serialize($props), 1));

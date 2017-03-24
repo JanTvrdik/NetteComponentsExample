@@ -1,12 +1,16 @@
 <?php
 
+namespace App;
+
+use Nette;
+
+
 /**
  * Část modelu starající se o práci s články
- *
- * @author   Jan Tvrdík
  */
-class ArticlesService extends Nette\Object
+class ArticlesService
 {
+	use Nette\SmartObject;
 
 	/** @var     Nette\Database\Connection */
 	private $db;
@@ -51,5 +55,4 @@ class ArticlesService extends Nette\Object
 			FROM `articles`
 		');
 	}
-
 }

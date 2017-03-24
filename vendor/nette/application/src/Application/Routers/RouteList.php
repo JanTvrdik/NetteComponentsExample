@@ -18,7 +18,7 @@ class RouteList extends Nette\Utils\ArrayList implements Nette\Application\IRout
 	/** @var array */
 	private $cachedRoutes;
 
-	/** @var string */
+	/** @var string|NULL */
 	private $module;
 
 
@@ -55,22 +55,7 @@ class RouteList extends Nette\Utils\ArrayList implements Nette\Application\IRout
 	public function constructUrl(Nette\Application\Request $appRequest, Nette\Http\Url $refUrl)
 	{
 		if ($this->cachedRoutes === NULL) {
-			$routes = array();
-			$routes['*'] = array();
-
-			foreach ($this as $route) {
-				$presenters = $route instanceof Route && is_array($tmp = $route->getTargetPresenters())
-					? $tmp : array_keys($routes);
-
-				foreach ($presenters as $presenter) {
-					if (!isset($routes[$presenter])) {
-						$routes[$presenter] = $routes['*'];
-					}
-					$routes[$presenter][] = $route;
-				}
-			}
-
-			$this->cachedRoutes = $routes;
+			$this->warmupCache();
 		}
 
 		if ($this->module) {
@@ -98,6 +83,28 @@ class RouteList extends Nette\Utils\ArrayList implements Nette\Application\IRout
 	}
 
 
+	public function warmupCache()
+	{
+		$routes = [];
+		$routes['*'] = [];
+
+		foreach ($this as $route) {
+			$presenters = $route instanceof Route && is_array($tmp = $route->getTargetPresenters())
+				? $tmp
+				: array_keys($routes);
+
+			foreach ($presenters as $presenter) {
+				if (!isset($routes[$presenter])) {
+					$routes[$presenter] = $routes['*'];
+				}
+				$routes[$presenter][] = $route;
+			}
+		}
+
+		$this->cachedRoutes = $routes;
+	}
+
+
 	/**
 	 * Adds the router.
 	 * @param  mixed
@@ -114,7 +121,7 @@ class RouteList extends Nette\Utils\ArrayList implements Nette\Application\IRout
 
 
 	/**
-	 * @return string
+	 * @return string|NULL
 	 */
 	public function getModule()
 	{

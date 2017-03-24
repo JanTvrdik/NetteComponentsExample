@@ -1,9 +1,9 @@
-{block #content}
+{block content}
 
     <h1>{$article->title}</h1>
 
-    {* Vypsání escapovaného obsahu článku se zachováním odřádkování. Viz CommentsControl.latte pro podrobné vysvětlení. *}
-    {!$article->content|escape|nl2br}
+    {* Vypsání escapovaného obsahu článku se zachováním odřádkování. *}
+    {$article->content|breaklines}
 
     {* Vykreslení komponenty comments, ekvivalent $presenter['comments']->render() *}
     {control comments}

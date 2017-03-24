@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Security;
@@ -18,16 +18,20 @@ use Nette;
  * @property-read mixed $id
  * @property-read array $roles
  * @property-read int $logoutReason
- * @property-read IUserStorage $storage
  * @property   IAuthenticator $authenticator
  * @property   IAuthorizator $authorizator
  */
-class User extends Nette\Object
+class User
 {
+	use Nette\SmartObject;
+
 	/** @deprecated */
-	const MANUAL = IUserStorage::MANUAL,
-		INACTIVITY = IUserStorage::INACTIVITY,
-		BROWSER_CLOSED = IUserStorage::BROWSER_CLOSED;
+	const
+		MANUAL = IUserStorage::MANUAL,
+		INACTIVITY = IUserStorage::INACTIVITY;
+
+	/** @deprecated */
+	const BROWSER_CLOSED = IUserStorage::BROWSER_CLOSED;
 
 	/** @var string  default role for unauthenticated user */
 	public $guestRole = 'guest';
@@ -140,7 +144,7 @@ class User extends Nette\Object
 
 	/**
 	 * Sets authentication handler.
-	 * @return self
+	 * @return static
 	 */
 	public function setAuthenticator(IAuthenticator $handler)
 	{
@@ -164,15 +168,15 @@ class User extends Nette\Object
 
 	/**
 	 * Enables log out after inactivity.
-	 * @param  string|int|DateTime number of seconds or timestamp
-	 * @param  bool  log out when the browser is closed?
-	 * @param  bool  clear the identity from persistent storage?
-	 * @return self
+	 * @param  string|int|\DateTimeInterface number of seconds or timestamp
+	 * @param  int|bool  flag IUserStorage::CLEAR_IDENTITY
+	 * @param  bool  clear the identity from persistent storage? (deprecated)
+	 * @return static
 	 */
-	public function setExpiration($time, $whenBrowserIsClosed = TRUE, $clearIdentity = FALSE)
+	public function setExpiration($time, $flags = NULL, $clearIdentity = FALSE)
 	{
-		$flags = ($whenBrowserIsClosed ? IUserStorage::BROWSER_CLOSED : 0) | ($clearIdentity ? IUserStorage::CLEAR_IDENTITY : 0);
-		$this->storage->setExpiration($time, $flags);
+		$clearIdentity = $clearIdentity || $flags === IUserStorage::CLEAR_IDENTITY;
+		$this->storage->setExpiration($time, $clearIdentity ? IUserStorage::CLEAR_IDENTITY : 0);
 		return $this;
 	}
 
@@ -197,11 +201,11 @@ class User extends Nette\Object
 	public function getRoles()
 	{
 		if (!$this->isLoggedIn()) {
-			return array($this->guestRole);
+			return [$this->guestRole];
 		}
 
 		$identity = $this->getIdentity();
-		return $identity && $identity->getRoles() ? $identity->getRoles() : array($this->authenticatedRole);
+		return $identity && $identity->getRoles() ? $identity->getRoles() : [$this->authenticatedRole];
 	}
 
 
@@ -237,7 +241,7 @@ class User extends Nette\Object
 
 	/**
 	 * Sets authorization handler.
-	 * @return self
+	 * @return static
 	 */
 	public function setAuthorizator(IAuthorizator $handler)
 	{

@@ -14,8 +14,10 @@ use Nette\Caching\Cache;
 /**
  * Memcached storage.
  */
-class MemcachedStorage extends Nette\Object implements Nette\Caching\IStorage
+class MemcachedStorage implements Nette\Caching\IStorage
 {
+	use Nette\SmartObject;
+
 	/** @internal cache structure */
 	const META_CALLBACKS = 'callbacks',
 		META_DATA = 'data',
@@ -76,8 +78,8 @@ class MemcachedStorage extends Nette\Object implements Nette\Caching\IStorage
 
 	/**
 	 * Read from cache.
-	 * @param  string key
-	 * @return mixed|NULL
+	 * @param  string
+	 * @return mixed
 	 */
 	public function read($key)
 	{
@@ -110,7 +112,7 @@ class MemcachedStorage extends Nette\Object implements Nette\Caching\IStorage
 
 	/**
 	 * Prevents item reading and writing. Lock is released by write() or remove().
-	 * @param  string key
+	 * @param  string
 	 * @return void
 	 */
 	public function lock($key)
@@ -120,9 +122,8 @@ class MemcachedStorage extends Nette\Object implements Nette\Caching\IStorage
 
 	/**
 	 * Writes item into the cache.
-	 * @param  string key
-	 * @param  mixed  data
-	 * @param  array  dependencies
+	 * @param  string
+	 * @param  mixed
 	 * @return void
 	 */
 	public function write($key, $data, array $dp)
@@ -132,9 +133,9 @@ class MemcachedStorage extends Nette\Object implements Nette\Caching\IStorage
 		}
 
 		$key = urlencode($this->prefix . $key);
-		$meta = array(
+		$meta = [
 			self::META_DATA => $data,
-		);
+		];
 
 		$expire = 0;
 		if (isset($dp[Cache::EXPIRATION])) {
@@ -161,7 +162,7 @@ class MemcachedStorage extends Nette\Object implements Nette\Caching\IStorage
 
 	/**
 	 * Removes item from the cache.
-	 * @param  string key
+	 * @param  string
 	 * @return void
 	 */
 	public function remove($key)

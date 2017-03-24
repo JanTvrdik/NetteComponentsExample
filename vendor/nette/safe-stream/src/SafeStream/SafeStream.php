@@ -1,8 +1,8 @@
 <?php
 
 /**
- * This file is part of the Nette Framework (http://nette.org)
- * Copyright (c) 2004 David Grudl (http://davidgrudl.com)
+ * This file is part of the Nette Framework (https://nette.org)
+ * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
 
 namespace Nette\Utils;
@@ -50,9 +50,10 @@ class SafeStream
 	 */
 	public static function register()
 	{
-		@stream_wrapper_unregister('safe'); // old protocol
-		stream_wrapper_register('safe', __CLASS__);
-		@stream_wrapper_unregister(self::PROTOCOL); // intentionally @
+		foreach (array_intersect(stream_get_wrappers(), array('safe', self::PROTOCOL)) as $name) {
+			stream_wrapper_unregister($name);
+		}
+		stream_wrapper_register('safe', __CLASS__); // old protocol
 		return stream_wrapper_register(self::PROTOCOL, __CLASS__);
 	}
 

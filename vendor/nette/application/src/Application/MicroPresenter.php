@@ -17,8 +17,10 @@ use Latte;
 /**
  * Micro presenter.
  */
-class MicroPresenter extends Nette\Object implements Application\IPresenter
+class MicroPresenter implements Application\IPresenter
 {
+	use Nette\SmartObject;
+
 	/** @var Nette\DI\Container|NULL */
 	private $context;
 
@@ -28,7 +30,7 @@ class MicroPresenter extends Nette\Object implements Application\IPresenter
 	/** @var Application\IRouter|NULL */
 	private $router;
 
-	/** @var Application\Request */
+	/** @var Application\Request|NULL */
 	private $request;
 
 
@@ -42,7 +44,7 @@ class MicroPresenter extends Nette\Object implements Application\IPresenter
 
 	/**
 	 * Gets the context.
-	 * @return Nette\DI\Container
+	 * @return Nette\DI\Container|NULL
 	 */
 	public function getContext()
 	{
@@ -69,26 +71,23 @@ class MicroPresenter extends Nette\Object implements Application\IPresenter
 		if (!isset($params['callback'])) {
 			throw new Application\BadRequestException('Parameter callback is missing.');
 		}
-		$params['presenter'] = $this;
 		$callback = $params['callback'];
 		$reflection = Nette\Utils\Callback::toReflection(Nette\Utils\Callback::check($callback));
-		$params = Application\UI\PresenterComponentReflection::combineArgs($reflection, $params);
 
 		if ($this->context) {
 			foreach ($reflection->getParameters() as $param) {
-				if ($param->getClassName()) {
-					unset($params[$param->getPosition()]);
+				if ($param->getClass()) {
+					$params[$param->getName()] = $this->context->getByType($param->getClass()->getName(), FALSE);
 				}
 			}
-
-			$params = Nette\DI\Helpers::autowireArguments($reflection, $params, $this->context);
-			$params['presenter'] = $this;
 		}
+		$params['presenter'] = $this;
+		$params = Application\UI\ComponentReflection::combineArgs($reflection, $params);
 
 		$response = call_user_func_array($callback, $params);
 
 		if (is_string($response)) {
-			$response = array($response, array());
+			$response = [$response, []];
 		}
 		if (is_array($response)) {
 			list($templateSource, $templateParams) = $response;
@@ -109,12 +108,11 @@ class MicroPresenter extends Nette\Object implements Application\IPresenter
 	/**
 	 * Template factory.
 	 * @param  string
-	 * @param  callable
 	 * @return Application\UI\ITemplate
 	 */
-	public function createTemplate($class = NULL, $latteFactory = NULL)
+	public function createTemplate($class = NULL, callable $latteFactory = NULL)
 	{
-		$latte = $latteFactory ? $latteFactory() : $this->getContext()->getByType('Nette\Bridges\ApplicationLatte\ILatteFactory')->create();
+		$latte = $latteFactory ? $latteFactory() : $this->getContext()->getByType(Nette\Bridges\ApplicationLatte\ILatteFactory::class)->create();
 		$template = $class ? new $class : new Nette\Bridges\ApplicationLatte\Template($latte);
 
 		$template->setParameters($this->request->getParameters());
@@ -135,9 +133,9 @@ class MicroPresenter extends Nette\Object implements Application\IPresenter
 	 * @param  int HTTP code
 	 * @return Nette\Application\Responses\RedirectResponse
 	 */
-	public function redirectUrl($url, $code = Http\IResponse::S302_FOUND)
+	public function redirectUrl($url, $httpCode = Http\IResponse::S302_FOUND)
 	{
-		return new Responses\RedirectResponse($url, $code);
+		return new Responses\RedirectResponse($url, $httpCode);
 	}
 
 
@@ -148,14 +146,14 @@ class MicroPresenter extends Nette\Object implements Application\IPresenter
 	 * @return void
 	 * @throws Nette\Application\BadRequestException
 	 */
-	public function error($message = NULL, $code = Http\IResponse::S404_NOT_FOUND)
+	public function error($message = NULL, $httpCode = Http\IResponse::S404_NOT_FOUND)
 	{
-		throw new Application\BadRequestException($message, $code);
+		throw new Application\BadRequestException($message, $httpCode);
 	}
 
 
 	/**
-	 * @return Nette\Application\Request
+	 * @return Nette\Application\Request|NULL
 	 */
 	public function getRequest()
 	{

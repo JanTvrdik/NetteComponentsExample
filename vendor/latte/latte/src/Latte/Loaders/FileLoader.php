@@ -13,8 +13,19 @@ use Latte;
 /**
  * Template loader.
  */
-class FileLoader extends Latte\Object implements Latte\ILoader
+class FileLoader implements Latte\ILoader
 {
+	use Latte\Strict;
+
+	/** @var string|NULL */
+	private $baseDir;
+
+
+	public function __construct($baseDir = NULL)
+	{
+		$this->baseDir = $baseDir ? $this->normalizePath("$baseDir/") : NULL;
+	}
+
 
 	/**
 	 * Returns template source code.
@@ -22,13 +33,16 @@ class FileLoader extends Latte\Object implements Latte\ILoader
 	 */
 	public function getContent($file)
 	{
-		if (!is_file($file)) {
+		$file = $this->baseDir . $file;
+		if ($this->baseDir && !Latte\Helpers::startsWith($this->normalizePath($file), $this->baseDir)) {
+			throw new \RuntimeException("Template '$file' is not within the allowed path '$this->baseDir'.");
+
+		} elseif (!is_file($file)) {
 			throw new \RuntimeException("Missing template file '$file'.");
 
 		} elseif ($this->isExpired($file, time())) {
 			if (@touch($file) === FALSE) {
-				$tmp = error_get_last();
-				trigger_error("File's modification time is in the future. Cannot update it: $tmp[message]", E_USER_WARNING);
+				trigger_error("File's modification time is in the future. Cannot update it: " . error_get_last()['message'], E_USER_WARNING);
 			}
 		}
 		return file_get_contents($file);
@@ -40,20 +54,47 @@ class FileLoader extends Latte\Object implements Latte\ILoader
 	 */
 	public function isExpired($file, $time)
 	{
-		return @filemtime($file) > $time; // @ - stat may fail
+		return @filemtime($this->baseDir . $file) > $time; // @ - stat may fail
 	}
 
 
 	/**
-	 * Returns fully qualified template name.
+	 * Returns referred template name.
 	 * @return string
 	 */
-	public function getChildName($file, $parent = NULL)
+	public function getReferredName($file, $referringFile)
 	{
-		if ($parent && !preg_match('#/|\\\\|[a-z][a-z0-9+.-]*:#iA', $file)) {
-			$file = dirname($parent) . '/' . $file;
+		if ($this->baseDir || !preg_match('#/|\\\\|[a-z][a-z0-9+.-]*:#iA', $file)) {
+			$file = $this->normalizePath($referringFile . '/../' . $file);
 		}
 		return $file;
+	}
+
+
+	/**
+	 * Returns unique identifier for caching.
+	 * @return string
+	 */
+	public function getUniqueId($file)
+	{
+		return $this->baseDir . strtr($file, '/', DIRECTORY_SEPARATOR);
+	}
+
+
+	/**
+	 * @return string
+	 */
+	private static function normalizePath($path)
+	{
+		$res = [];
+		foreach (explode('/', strtr($path, '\\', '/')) as $part) {
+			if ($part === '..' && $res && end($res) !== '..') {
+				array_pop($res);
+			} elseif ($part !== '.') {
+				$res[] = $part;
+			}
+		}
+		return implode(DIRECTORY_SEPARATOR, $res);
 	}
 
 }
